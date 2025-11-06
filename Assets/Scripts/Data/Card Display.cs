@@ -7,7 +7,7 @@ using TMPro;
 public class CardDisplay : MonoBehaviour
 {
     public CardData card;
-    
+    public DeckManager deckManager;
 
     
     public TextMeshProUGUI DescriptionText;
@@ -15,6 +15,9 @@ public class CardDisplay : MonoBehaviour
     public Image ArtworkImage;
     public bool cardBack;
     public static bool cardTurnedBack;
+
+    public GameObject Hand;
+    public int numberOfCardsInHand;
 
     public void Setup(CardData card)
     {
@@ -25,6 +28,7 @@ public class CardDisplay : MonoBehaviour
     }
     void Start()
     {
+        numberOfCardsInHand = deckManager.deckSize;
         if (card == null)
         {
             Debug.LogError("CardData not assigned!");
@@ -38,9 +42,28 @@ public class CardDisplay : MonoBehaviour
         Debug.Log($"Displaying card: {card.cardName}");
     }
 
+    private bool GetCardBack()
+    {
+        return cardBack;
+    }
 
     void Update()
     {
-         cardTurnedBack = cardBack;
+         Hand = GameObject.Find("HandPanel");
+
+        if (this.transform.parent == Hand.transform.parent)
+        {
+            cardBack = false;
+        }
+        cardTurnedBack = cardBack;
+
+        if ( this.tag == "Clone")
+        {
+            //displayCard[0] = deckManager.playerStaticDeck[deckManager.deckSize - 1];
+            numberOfCardsInHand += 1;
+            deckManager.deckSize -= 1;
+            cardBack = false;
+            this.tag = "false";
+        }
     }
 }

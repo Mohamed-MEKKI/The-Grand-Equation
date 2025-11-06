@@ -1,16 +1,26 @@
 using NUnit.Framework;
 using UnityEngine;
 using System.Collections.Generic;
+using System.Collections;
 
 public class DeckManager : MonoBehaviour
 {
     // Start is called once before the first execution of Update after the MonoBehaviour is created
     public List<CardData> cards = new List<CardData>();
     public List<CardData> cardsInDeck;
+    public int deckSize;
+    public static List<CardData> staticDeckplayerStaticDeck;
+    
+
+    public GameObject Hand;
+    public GameObject CardToHand;
+    public GameObject[] clones;
     
     void Start()
     {
         SchuffleCards();
+        //StartRoutine(StartGame());
+
     }
 
     public void SchuffleCards()
@@ -24,6 +34,20 @@ public class DeckManager : MonoBehaviour
             cardsInDeck[randomOrder] = cup;
 
         }
+    }
+
+    IEnumerator StartGame()
+    {
+        for (int i = 0; i < 4; i++)
+        {
+            yield return new WaitForSeconds(1);
+            Instantiate(CardToHand, transform.position, transform.rotation);
+        }
+    }
+
+    public void StartRoutine(GameObject hand)
+    {
+
     }
     
     public CardData DrawCard()

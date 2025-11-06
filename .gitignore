@@ -1,7 +1,25 @@
-.vs
-Library/
+#Unity generated
+[Ll]ibrary/
 Assembly-CSharp.csproj
 Assembly-CSharp-Editor.csproj
 My project.sln
-Logs/
+/[Oo]bj/
+/[Tt]emp/
+/[Bb]uild/
+/[Bb]uilds/
+/[Ll]ogs/
+/[Uu]ser[Ss]ettings/
+
+#Vs code
 .vsconfig
+.vs
+
+
+
+# Auto-generated
+/[Aa]ssets/Plugins/
+/[Aa]ssets/AddressableAssetsData/
+/[Aa]ssets/StreamingAssets/
+
+# Packages cache
+/[Pp]ackages/packages-lock.json

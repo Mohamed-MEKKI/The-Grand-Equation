@@ -1762,8 +1762,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: 112.4246, y: -174.6}
-  m_SizeDelta: {x: -631.6171, y: -349.2}
+  m_AnchoredPosition: {x: 36.329712, y: -148.69916}
+  m_SizeDelta: {x: -596.9576, y: -320.6017}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!1 &861126989
 GameObject:
@@ -2575,8 +2575,8 @@ RectTransform:
   m_LocalEulerAnglesHint: {x: 0, y: 0, z: 0}
   m_AnchorMin: {x: 0, y: 0}
   m_AnchorMax: {x: 1, y: 1}
-  m_AnchoredPosition: {x: -168, y: 133}
-  m_SizeDelta: {x: -411.2776, y: -349.2}
+  m_AnchoredPosition: {x: -142.336, y: 147.0021}
+  m_SizeDelta: {x: -385.9496, y: -329.2042}
   m_Pivot: {x: 0.5, y: 0.5}
 --- !u!114 &1426481293
 MonoBehaviour:
@@ -3310,6 +3310,10 @@ MonoBehaviour:
   - {fileID: 0}
   - {fileID: 0}
   - {fileID: 0}
+  deckSize: 0
+  Hand: {fileID: 0}
+  CardToHand: {fileID: 0}
+  clones: []
 --- !u!4 &1863167287
 Transform:
   m_ObjectHideFlags: 0
@@ -3864,11 +3868,11 @@ PrefabInstance:
       objectReference: {fileID: 0}
     - target: {fileID: 9158108489944612518, guid: 021affce6f1c5fb4db3e9deb7b0c66ad, type: 3}
       propertyPath: m_AnchoredPosition.x
-      value: 157.97
+      value: 315
       objectReference: {fileID: 0}
     - target: {fileID: 9158108489944612518, guid: 021affce6f1c5fb4db3e9deb7b0c66ad, type: 3}
       propertyPath: m_AnchoredPosition.y
-      value: 0
+      value: 35
       objectReference: {fileID: 0}
     - target: {fileID: 9158108489944612518, guid: 021affce6f1c5fb4db3e9deb7b0c66ad, type: 3}
       propertyPath: m_LocalEulerAnglesHint.x

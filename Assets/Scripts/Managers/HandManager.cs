@@ -18,13 +18,7 @@ public class HandManager : MonoBehaviour
             if (Hand == null) { Debug.LogError("Hand panel not assigned"); return; }
             if (CardPrefab == null) { Debug.LogError("Card prefab not assigned"); return; }
 
-            var card = DeckManager.Instance?.DrawCard();
-            if (card == null)
-            {
-                Debug.LogWarning("Deck empty or DeckManager missing.");
-                break;
-            }
-            AddCardToHand(card);
+            
         }
     } 
     public void AddCardToHand(CardData cardData)
