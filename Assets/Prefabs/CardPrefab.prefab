@@ -592,6 +592,8 @@ GameObject:
   - component: {fileID: 8220804046350954111}
   - component: {fileID: 4214094594146949531}
   - component: {fileID: 7925960634798922170}
+  - component: {fileID: 4050503103729553719}
+  - component: {fileID: 1407807843742671870}
   m_Layer: 5
   m_Name: CardPrefab
   m_TagString: Untagged
@@ -671,10 +673,11 @@ MonoBehaviour:
   m_Name: 
   m_EditorClassIdentifier: Assembly-CSharp::CardDisplay
   card: {fileID: 11400000, guid: 054c866631fafcc448d51a5988aec91c, type: 2}
-  DescriptionText: {fileID: 4353194569852749827}
+  deckManager: {fileID: 0}
   NameText: {fileID: 6621999918382366308}
+  DescriptionText: {fileID: 4353194569852749827}
   ArtworkImage: {fileID: 429223119682549052}
-  cardBack: 1
+  cardBackSprite: {fileID: 0}
 --- !u!114 &8220804046350954111
 MonoBehaviour:
   m_ObjectHideFlags: 0
@@ -777,6 +780,31 @@ MonoBehaviour:
             m_StringArgument: 
             m_BoolArgument: 0
           m_CallState: 1
+--- !u!114 &4050503103729553719
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9177452021964098996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: 06bcd34a456db814eb4a7c9f1d08548b, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardHover
+--- !u!114 &1407807843742671870
+MonoBehaviour:
+  m_ObjectHideFlags: 0
+  m_CorrespondingSourceObject: {fileID: 0}
+  m_PrefabInstance: {fileID: 0}
+  m_PrefabAsset: {fileID: 0}
+  m_GameObject: {fileID: 9177452021964098996}
+  m_Enabled: 1
+  m_EditorHideFlags: 0
+  m_Script: {fileID: 11500000, guid: a03b5ab3c76037e45902a78823412c7c, type: 3}
+  m_Name: 
+  m_EditorClassIdentifier: Assembly-CSharp::CardFlip
+  flipDuration: 0.3
 --- !u!1001 &4223835467471117167
 PrefabInstance:
   m_ObjectHideFlags: 0
