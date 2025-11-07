@@ -3,7 +3,7 @@
 Assembly-CSharp.csproj
 Assembly-CSharp-Editor.csproj
 My project.sln
-/[Oo]bj/
+[Oo]bj/
 /[Tt]emp/
 /[Bb]uild/
 /[Bb]uilds/
