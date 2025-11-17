@@ -95,6 +95,7 @@ public class GameManager : MonoBehaviour
 
     public void EndPlayerTurn()
     {
+        if (PauseManager.Instance.isPaused) return;
         StartCoroutine("PlayerTurn");
         StopCoroutine(OpponentTurn());
         Debug.Log("Your turn has been ended");
