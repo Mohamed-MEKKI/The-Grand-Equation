@@ -1,58 +1,79 @@
-using System.Linq;
+﻿using System.Linq;
 using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class CardDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     private Canvas canvas;
-    private RectTransform rectTransform;
     private CanvasGroup canvasGroup;
+    private RectTransform rectTransform;
+    private Vector3 originalPosition;
+    private Transform originalParent;
 
-    void Awake()
+    private void Awake()
     {
-        rectTransform = GetComponent<RectTransform>();
+        Canvas[] canvases = Object.FindObjectsByType<Canvas>(FindObjectsSortMode.None);
+        canvas = canvases.Length > 0 ? canvases[0] : null;
         canvasGroup = GetComponent<CanvasGroup>();
+        rectTransform = GetComponent<RectTransform>();
 
+        // Safety: make sure CanvasGroup exists
         if (canvasGroup == null)
             canvasGroup = gameObject.AddComponent<CanvasGroup>();
-        // Find the parent canvas (needed for proper dragging)
-        canvas = GetComponentInParent<Canvas>();
     }
+
     public void OnBeginDrag(PointerEventData eventData)
     {
+        if (!GameManager.Instance.isPlayerTurn) return;
+
+        originalPosition = rectTransform.position;
+        originalParent = transform.parent;
+
         canvasGroup.alpha = 0.7f;
         canvasGroup.blocksRaycasts = false;
-        transform.SetParent(GetComponentInParent<Canvas>().transform);
-        rectTransform.SetAsLastSibling();
+
+        // Bring to front
+        transform.SetParent(canvas.transform);
+        transform.SetAsLastSibling();
+    }
+
+    public void OnDrag(PointerEventData eventData)
+    {
+        if (!GameManager.Instance.isPlayerTurn) return;
+
+        rectTransform.anchoredPosition += eventData.delta / canvas.scaleFactor;
     }
 
     public void OnEndDrag(PointerEventData eventData)
     {
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
-        if (IsOverPlayZone(eventData))
+
+        // SAFETY: Check if HandManager exists
+        if (HandManager.Instance == null)
         {
-            GameManager.Instance.PlayCard(GetComponent<CardDisplay>().card);
-            HandManager.Instance.RemoveCardFromHand(gameObject);
+            Debug.LogError("HandManager.Instance is NULL! Did you forget to add HandManager to the scene?");
+            ResetCardPosition();
+            return;
         }
-        else
-        {
-            HandManager.Instance.ArrangeHand(true); // Snap back
-        }
+
+        // SUCCESS: Drop anywhere = add to hand (no PlayZone needed)
+       
+        HandManager.Instance.AddCardToHand(gameObject, true); // true = player
+  
+
+
+        // Optional: rearrange hand
+        HandManager.Instance.ArrangeHand(true);
+
+        // If card was dragged from deck → keep it in hand
+        // If it was already in hand → it just snaps back nicely
     }
 
-    bool IsOverPlayZone(PointerEventData eventData)
+    private void ResetCardPosition()
     {
-        var raycastResults = new System.Collections.Generic.List<RaycastResult>();
-        EventSystem.current.RaycastAll(eventData, raycastResults);
-        return raycastResults.Any(r => r.gameObject.CompareTag("PlayZone"));
-    }
-    
-
-    public void OnDrag(PointerEventData eventData)
-    {
-        // Move card with the mouse
-        rectTransform.anchoredPosition += eventData.delta / canvas.scaleFactor;
+        rectTransform.position = originalPosition;
+        if (originalParent != null)
+            transform.SetParent(originalParent);
     }
 }
-

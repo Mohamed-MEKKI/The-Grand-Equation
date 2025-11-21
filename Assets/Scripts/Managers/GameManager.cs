@@ -1,5 +1,6 @@
+﻿using System.Collections;
+using TMPro;
 using UnityEngine;
-using System.Collections;
 using UnityEngine.Rendering;
 
 public class GameManager : MonoBehaviour
@@ -11,15 +12,16 @@ public class GameManager : MonoBehaviour
     public HandManager handManager;
 
     [Header("Game State")]
-    public int playerHealth = 30;
-    public int opponentHealth = 30;
+    public int playerCoins = 0;
+    public int opponentCoins = 0;
     public int playerMana = 1;
     public int maxMana = 10;
     public bool isPlayerTurn = true;
 
-    [Header("UI")]
-    public TMPro.TextMeshProUGUI playerManaText;
-    public TMPro.TextMeshProUGUI playerHealthText;
+    [Header("UI References — DRAG THESE!")]
+    public TextMeshProUGUI playerCoinsText;
+    public TextMeshProUGUI opponentCoinsText;
+    public TextMeshProUGUI turnText;
 
     void Awake()
     {
@@ -39,13 +41,13 @@ public class GameManager : MonoBehaviour
         yield return StartCoroutine(deckManager.StartGame());
 
         // 2. Player turn loop
-        while (playerHealth > 0 && opponentHealth > 0)
+        while (playerCoins > 0 && opponentCoins > 0)
         {
             yield return StartCoroutine(PlayerTurn());
-            if (opponentHealth <= 0) yield break;
+            if (playerCoins <= 0) yield break;
 
             yield return StartCoroutine(OpponentTurn());
-            if (playerHealth <= 0) yield break;
+            if (opponentCoins <= 0) yield break;
         }
 
         EndGame();
@@ -57,8 +59,23 @@ public class GameManager : MonoBehaviour
         playerMana = Mathf.Min(playerMana + 1, maxMana);  // Mana refresh
         UpdateUI();
 
-        // Player gets 30s to play cards
-        yield return new WaitForSeconds(30f);
+        const float turnDuration = 50f; // 50 seconds per request
+        float elapsed = 0f;
+
+        while (elapsed < turnDuration)
+        {
+            // If a PauseManager exists and the game is paused, wait without advancing elapsed time.
+            if (PauseManager.Instance != null && PauseManager.Instance.isPaused)
+            {
+                yield return null;
+                continue;
+            }
+
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Turn time expired, coroutine ends and GameLoop continues to opponent turn.
     }
 
     IEnumerator OpponentTurn()
@@ -71,26 +88,50 @@ public class GameManager : MonoBehaviour
         handManager.OpponentPlayRandomCard();  // If you added this
     }
 
-    public void PlayCard(CardData card)
+    public void PlayCard(CardDefiner cardDef, GameObject cardObj)
     {
-        //if (!isPlayerTurn || playerMana < card.manaCost) return;
+        // 1. Remove from hand
+        HandManager.Instance.RemoveCardFromHand(cardObj, true);
 
-        //playerMana -= card.manaCost;
-        UpdateUI();
-        //handManager.RemoveCardFromHand(/* the dragged card */, true);
+        // 2. Spawn on playfield (FACE DOWN)
+        GameObject playedCard = Instantiate(cardObj);
+        PlayedCard played = playedCard.GetComponent<PlayedCard>();
+        played.Setup(cardDef);
+        RoleAbilityManager.Instance.playerRoles.Add(played);
 
-        // TODO: Spawn on battlefield
-        //GameObject playedCard = Instantiate(cardPrefab, PlayZone.transform);
-        //playedCard.GetComponent<CardDisplay>().Setup(card);
-        //StartCoroutine(ScaleIn(playedCard));
+        // 3. Trigger ability
+        foreach (var ability in cardDef.abilities)
+        {
+            RoleAbilityManager.Instance.ExecuteAbility(ability);
+        }
 
-        Debug.Log($"Played: {card.cardName}");
+        Debug.Log($"✅ Played {cardDef.cardName} → {cardDef.possibleActions}");
     }
 
-    void UpdateUI()
+    public void ClaimRole(CardDefiner claimedRole)
     {
-        playerManaText.text = $"{playerMana}/{maxMana}";
-        playerHealthText.text = playerHealth.ToString();
+        Debug.Log($"Player claims: {claimedRole.cardName} → {claimedRole.possibleActions}");
+
+        foreach (var ability in claimedRole.abilities)
+            RoleAbilityManager.Instance.ExecuteAbility(ability);
+    }
+
+    public void UpdateUI()
+    {
+        // SAFETY: Prevent crash if references missing
+        if (playerCoinsText != null)
+            playerCoinsText.text = playerCoins.ToString();
+
+        if (opponentCoinsText != null)
+            opponentCoinsText.text = opponentCoins.ToString();
+
+        if (turnText != null)
+            turnText.text = isPlayerTurn ? "Your Turn" : "Opponent Turn";
+
+        // Optional: warn in console if missing
+        if (playerCoinsText == null) Debug.LogError("PlayerCoinsText not assigned!", this);
+        if (opponentCoinsText == null) Debug.LogError("OpponentCoinsText not assigned!", this);
+        if (turnText == null) Debug.LogError("TurnText not assigned!", this);
     }
 
     public void EndPlayerTurn()
@@ -104,7 +145,7 @@ public class GameManager : MonoBehaviour
 
     void EndGame()
     {
-        Debug.Log(playerHealth > 0 ? "Player Wins!" : "Opponent Wins!");
+        Debug.Log(playerCoins == 0 ? "Player Wins!" : "Opponent Wins!");
     }
 
     IEnumerator ScaleIn(GameObject card)

@@ -30,7 +30,7 @@ public class CardFlip : MonoBehaviour
         }
 
         // 2. Swap side at the midpoint
-        display.SetFaceUp(toFaceUp);
+        //display.SetFaceUp(toFaceUp);
 
         // 3. Grow X back
         t = 0;

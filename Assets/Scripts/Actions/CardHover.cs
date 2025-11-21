@@ -1,33 +1,69 @@
+﻿using TMPro;
 using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.UI;
 
 public class CardHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
+    [Header("Tooltip UI")]
+    public GameObject tooltipPanel;
+    public TMP_Text Powers;
+
+    private CardDisplay cardDisplay;
     private RectTransform rect;
-    private Image outline;
-    public float hoverScale = 1.3f;
-    public float hoverHeight = 50f;
+    private Vector2 originalPos;
 
     void Awake()
     {
         rect = GetComponent<RectTransform>();
-        outline = GetComponent<Image>();
-        if (outline) outline.material = new Material(Shader.Find("UI/Default")); // Add outline shader
+        cardDisplay = GetComponent<CardDisplay>();
     }
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        rect.SetAsLastSibling(); // Bring to front
-        rect.localScale = Vector3.one * hoverScale;
-        rect.anchoredPosition += Vector2.up * hoverHeight;
-        if (outline) outline.material.SetColor("_Color", Color.yellow); // Glow effect
+        Debug.Log("Hover ON");
+        originalPos = rect.anchoredPosition;
+        rect.anchoredPosition += Vector2.up * 50;
+        rect.localScale = Vector3.one * 1.3f;
+        rect.SetAsLastSibling();
+
+        if (tooltipPanel && cardDisplay?.card != null)
+        {
+            Powers.text = cardDisplay.card.possibleActions;
+            tooltipPanel.SetActive(true);
+        }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
+        Debug.Log("Hover OFF");
+        rect.anchoredPosition = originalPos;
         rect.localScale = Vector3.one;
-        rect.anchoredPosition -= Vector2.up * hoverHeight;
-        if (outline) outline.material.SetColor("_Color", Color.white);
+        if (tooltipPanel) tooltipPanel.SetActive(false);
+    }
+
+    void ShowTooltip()
+    {
+        if (tooltipPanel == null || cardDisplay?.card == null) return;
+
+        Powers.text = BuildTooltipText(cardDisplay.card.abilities);
+        tooltipPanel.SetActive(true);
+        tooltipPanel.transform.SetAsLastSibling();
+    }
+
+    void HideTooltip() => tooltipPanel?.SetActive(false);
+
+    string BuildTooltipText(RoleAbility[] abilities)
+    {
+        var card = cardDisplay.card;
+        if (abilities == null || abilities.Length == 0) return card.possibleActions;
+
+        string tooltip = card.possibleActions + "\n\nAbilities:\n";
+        for (int i = 0; i < abilities.Length; i++)
+        {
+            tooltip += "• " + abilities[i].abilityName;
+            if (abilities[i].value > 0) tooltip += $" ({abilities[i].value})";
+            tooltip += "\n";
+        }
+        return tooltip.Trim();
     }
 }
