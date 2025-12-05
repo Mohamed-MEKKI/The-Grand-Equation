@@ -1,8 +1,5 @@
-﻿using System.ComponentModel;
-using Unity.VisualScripting;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
-using UnityEngine.tvOS;
 
 public class CardSelector : MonoBehaviour, IPointerClickHandler
 {
@@ -14,7 +11,7 @@ public class CardSelector : MonoBehaviour, IPointerClickHandler
         // Only allow elimination mode
         if (selectionType != HandManager.SelectionType.EliminateOpponentHand) return;
 
-        // SAFETY #2: Not in opponent hand? Ignore (can't eliminate own cards)
+        // Safety check: Not in opponent hand? Ignore (can't eliminate own cards)
         if (!HandManager.Instance.opponentHandCards.Contains(gameObject))
         {
             Debug.LogWarning("Can't eliminate own card!");
@@ -29,25 +26,16 @@ public class CardSelector : MonoBehaviour, IPointerClickHandler
 
         Debug.Log($"ELIMINATED: {gameObject.name}");
 
-        HandManager.Instance.opponentHandCards.Remove(gameObject);
-        HandManager.Instance.ArrangeHand(false); // opponent hand
-
-        HandManager.Instance.ExitEliminationMode();
-
-        StartCoroutine(DestroyEffect());
-    }
-
-    private void Eliminate()
-    {
-        Debug.Log($"ELIMINATED: {gameObject.name}");
-
         // Remove from opponent's hand list
         HandManager.Instance.opponentHandCards.Remove(gameObject);
-
+        
         // Rearrange opponent's hand
-        HandManager.Instance.ArrangeHand(false);  // false = opponent
+        HandManager.Instance.ArrangeHand(false);
 
-        // Destroy with cool effect
+        // Exit elimination mode
+        HandManager.Instance.ExitEliminationMode();
+
+        // Destroy with visual effect
         StartCoroutine(DestroyEffect());
     }
 

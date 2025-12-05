@@ -1,7 +1,9 @@
-﻿using System.Linq;
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
+/// <summary>
+/// Handles card dragging functionality for player cards
+/// </summary>
 public class CardDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, IEndDragHandler
 {
     private Canvas canvas;
@@ -49,14 +51,7 @@ public class CardDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
 
-        // Always add to player hand (no PlayZone needed)
+        // Return card to player hand
         HandManager.Instance.AddCardToHand(gameObject, true);
-    }
-
-    private void ResetCardPosition()
-    {
-        rectTransform.position = originalPosition;
-        if (originalParent != null)
-            transform.SetParent(originalParent);
     }
 }

@@ -80,7 +80,7 @@ public class DeckManager : MonoBehaviour
         Debug.Log($"Drew card to {(isPlayer ? "PLAYER" : "OPPONENT")} hand. Deck left: {cardsInDeck.Count}");
     }
 
-    // CALL THIS ONCE AT GAME START
+    // Deal starting hands to both players
     [ContextMenu("Deal Starting Hands")]
     public void DealStartingHands()
     {
@@ -89,8 +89,9 @@ public class DeckManager : MonoBehaviour
 
     public IEnumerator DealHandsCoroutine()
     {
-        HandManager.Instance.ClearHands();  // ← CRITICAL
+        HandManager.Instance.ClearHands();
 
+        // Deal to player
         for (int i = 0; i < startingHandSize; i++)
         {
             DrawToHand(true);
@@ -99,14 +100,11 @@ public class DeckManager : MonoBehaviour
 
         yield return new WaitForSeconds(1f);
 
+        // Deal to opponent
         for (int i = 0; i < startingHandSize; i++)
         {
-            DrawToHand(false);   // ← OPPONENT
+            DrawToHand(false);
             yield return new WaitForSeconds(0.4f);
         }
-    }
-    public void StartGame()
-    {
-        DealStartingHands();   // just forwards to the real method
     }
 }

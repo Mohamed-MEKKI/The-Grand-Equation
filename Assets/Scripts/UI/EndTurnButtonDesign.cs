@@ -4,27 +4,27 @@ using TMPro;
 using System.Collections;
 
 /// <summary>
-/// Script de design STYLÉ pour le bouton "Fin du Tour" 
-/// Design mystérieux avec effets de pulsation et glow rouge sang
+/// Script de design STYLï¿½ pour le bouton "Fin du Tour" 
+/// Design mystï¿½rieux avec effets de pulsation et glow rouge sang
 /// </summary>
 public class EndTurnButtonDesign : MonoBehaviour
 {
-    [Header("Références UI - Structure Complexe")]
+    [Header("Rï¿½fï¿½rences UI - Structure Complexe")]
     public Button endTurnButton;
-    public Image outerGlow;          // Cercle extérieur qui pulse
+    public Image outerGlow;          // Cercle extï¿½rieur qui pulse
     public Image buttonBackground;    // Background principal
-    public Image innerGlow;          // Glow intérieur
-    public Image centerIcon;         // Icône centrale (optionnelle)
+    public Image innerGlow;          // Glow intï¿½rieur
+    public Image centerIcon;         // Icï¿½ne centrale (optionnelle)
     public TextMeshProUGUI buttonText;
     public Button button;
 
     [Header("Animation Settings")]
-    public float pulseSpeed = 1.5f;
-    public float pulseIntensity = 0.3f;
+    public float pulseSpeed = 1.2f; // Slightly slower for smoother effect
+    public float pulseIntensity = 0.25f; // More subtle pulse
     public bool enablePulseAnimation = true;
 
     private Vector3 originalScale;
-    private Color glowColor = new Color(0.86f, 0.15f, 0.15f, 0.4f);
+    private Color glowColor = new Color(0.92f, 0.20f, 0.20f, 0.45f); // Brighter, more vibrant glow
 
     void Start()
     {
@@ -39,7 +39,7 @@ public class EndTurnButtonDesign : MonoBehaviour
         btn.onClick.AddListener(() =>
         {
 
-            // 100% SAFE — check everything exists
+            // 100% SAFE ï¿½ check everything exists
             if (TurnTimer.Instance != null)
             {
                 TurnTimer.Instance.StopTimer();
@@ -63,7 +63,7 @@ public class EndTurnButtonDesign : MonoBehaviour
         {
             outerGlow.color = new Color(0.86f, 0.15f, 0.15f, 0.3f);
 
-            // Outline épais pour effet de glow
+            // Outline ï¿½pais pour effet de glow
             Outline outerOutline = outerGlow.gameObject.GetComponent<Outline>();
             if (outerOutline == null)
                 outerOutline = outerGlow.gameObject.AddComponent<Outline>();
@@ -71,7 +71,7 @@ public class EndTurnButtonDesign : MonoBehaviour
             outerOutline.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.6f);
             outerOutline.effectDistance = new Vector2(8, 8);
 
-            // Shadow pour profondeur extrême
+            // Shadow pour profondeur extrï¿½me
             Shadow outerShadow = outerGlow.gameObject.GetComponent<Shadow>();
             if (outerShadow == null)
                 outerShadow = outerGlow.gameObject.AddComponent<Shadow>();
@@ -80,55 +80,62 @@ public class EndTurnButtonDesign : MonoBehaviour
             outerShadow.effectDistance = new Vector2(0, 8);
         }
 
-        // ===== BUTTON BACKGROUND - Gradient noir vers rouge =====
+        // ===== BUTTON BACKGROUND - Enhanced gradient noir vers rouge =====
         if (buttonBackground != null)
         {
-            buttonBackground.color = new Color(0.04f, 0.04f, 0.06f, 1f); // Noir profond
+            buttonBackground.color = new Color(0.06f, 0.06f, 0.10f, 1f); // Slightly lighter for better visibility
 
-            // Border rouge sang brillant
+            // Border rouge sang brillant - Enhanced
             Outline bgOutline = buttonBackground.gameObject.GetComponent<Outline>();
             if (bgOutline == null)
                 bgOutline = buttonBackground.gameObject.AddComponent<Outline>();
 
-            bgOutline.effectColor = new Color(0.86f, 0.15f, 0.15f, 1f); // Rouge sang pur
-            bgOutline.effectDistance = new Vector2(4, 4);
+            bgOutline.effectColor = new Color(0.95f, 0.25f, 0.25f, 1f); // Brighter red border
+            bgOutline.effectDistance = new Vector2(5, 5); // Thicker border
 
-            // Double shadow pour profondeur
+            // Double shadow pour profondeur - Enhanced
             Shadow bgShadow = buttonBackground.gameObject.GetComponent<Shadow>();
             if (bgShadow == null)
                 bgShadow = buttonBackground.gameObject.AddComponent<Shadow>();
 
-            bgShadow.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.5f); // Shadow rouge
-            bgShadow.effectDistance = new Vector2(0, 6);
+            bgShadow.effectColor = new Color(0.92f, 0.20f, 0.20f, 0.6f); // Brighter shadow
+            bgShadow.effectDistance = new Vector2(0, 8); // More depth
         }
 
-        // ===== INNER GLOW - Lueur intérieure =====
+        // ===== INNER GLOW - Lueur intï¿½rieure =====
         if (innerGlow != null)
         {
-            innerGlow.color = new Color(0.86f, 0.15f, 0.15f, 0.2f);
+            innerGlow.color = new Color(0.92f, 0.20f, 0.20f, 0.25f); // Brighter inner glow
 
             Outline innerOutline = innerGlow.gameObject.GetComponent<Outline>();
             if (innerOutline == null)
                 innerOutline = innerGlow.gameObject.AddComponent<Outline>();
 
-            innerOutline.effectColor = new Color(1f, 0.3f, 0.3f, 0.8f);
-            innerOutline.effectDistance = new Vector2(5, 5);
+            innerOutline.effectColor = new Color(1f, 0.35f, 0.35f, 0.9f); // Brighter outline
+            innerOutline.effectDistance = new Vector2(6, 6); // Larger glow
         }
 
-        // ===== CENTER ICON - Icône mystérieuse (optionnelle) =====
+        // ===== CENTER ICON - Icï¿½ne mystï¿½rieuse (optionnelle) =====
         if (centerIcon != null)
         {
-            centerIcon.color = new Color(0.86f, 0.15f, 0.15f, 0.8f);
+            centerIcon.color = new Color(0.95f, 0.30f, 0.30f, 0.9f); // Brighter icon
 
             Outline iconOutline = centerIcon.gameObject.GetComponent<Outline>();
             if (iconOutline == null)
                 iconOutline = centerIcon.gameObject.AddComponent<Outline>();
 
-            iconOutline.effectColor = Color.white;
-            iconOutline.effectDistance = new Vector2(2, 2);
+            iconOutline.effectColor = new Color(1f, 1f, 1f, 0.95f); // Brighter white outline
+            iconOutline.effectDistance = new Vector2(3, 3); // Thicker outline
+            
+            // Add glow to icon
+            Shadow iconShadow = centerIcon.gameObject.GetComponent<Shadow>();
+            if (iconShadow == null)
+                iconShadow = centerIcon.gameObject.AddComponent<Shadow>();
+            iconShadow.effectColor = new Color(0.95f, 0.30f, 0.30f, 0.5f);
+            iconShadow.effectDistance = new Vector2(0, 2);
         }
 
-        // ===== TEXTE - Stylé avec double outline =====
+        // ===== TEXTE - Stylï¿½ avec double outline =====
         if (buttonText != null)
         {
             buttonText.text = "FIN DU TOUR";
@@ -136,9 +143,9 @@ public class EndTurnButtonDesign : MonoBehaviour
             buttonText.fontSize = 28;
             buttonText.fontStyle = FontStyles.Bold | FontStyles.UpperCase;
             buttonText.alignment = TextAlignmentOptions.Center;
-            buttonText.characterSpacing = 5; // Espacement des lettres pour effet élégant
+            buttonText.characterSpacing = 5; // Espacement des lettres pour effet ï¿½lï¿½gant
 
-            // Outline noir épais
+            // Outline noir ï¿½pais
             Outline textOutline = buttonText.gameObject.GetComponent<Outline>();
             if (textOutline == null)
                 textOutline = buttonText.gameObject.AddComponent<Outline>();
@@ -161,7 +168,7 @@ public class EndTurnButtonDesign : MonoBehaviour
             ColorBlock colors = endTurnButton.colors;
 
             colors.normalColor = Color.white;
-            colors.highlightedColor = new Color(1f, 0.9f, 0.9f, 1f); // Légèrement rouge
+            colors.highlightedColor = new Color(1f, 0.9f, 0.9f, 1f); // Lï¿½gï¿½rement rouge
             colors.pressedColor = new Color(0.86f, 0.15f, 0.15f, 1f); // Rouge sang
             colors.disabledColor = new Color(0.3f, 0.3f, 0.3f, 0.3f);
             colors.fadeDuration = 0.15f;
@@ -178,23 +185,36 @@ public class EndTurnButtonDesign : MonoBehaviour
     {
         while (enablePulseAnimation)
         {
-            float pulse = Mathf.Sin(Time.time * pulseSpeed) * pulseIntensity;
+            // Smoother pulse using smoothstep for more natural animation
+            float time = Time.time * pulseSpeed;
+            float pulse = Mathf.Sin(time) * pulseIntensity;
+            float smoothPulse = Mathf.SmoothStep(-pulseIntensity, pulseIntensity, (Mathf.Sin(time) + 1f) * 0.5f) * 0.5f;
 
-            // Pulse sur le outer glow
+            // Pulse sur le outer glow - Enhanced with smoother transitions
             if (outerGlow != null)
             {
                 Color glowColorPulsed = glowColor;
-                glowColorPulsed.a = glowColor.a + pulse * 0.3f;
-                outerGlow.color = glowColorPulsed;
+                glowColorPulsed.a = glowColor.a + smoothPulse * 0.4f; // More dynamic alpha change
+                outerGlow.color = Color.Lerp(outerGlow.color, glowColorPulsed, Time.deltaTime * 5f); // Smooth interpolation
 
-                // Scale pulse
-                outerGlow.transform.localScale = Vector3.one * (1f + pulse * 0.2f);
+                // Scale pulse - Smoother
+                float scale = 1f + smoothPulse * 0.25f;
+                outerGlow.transform.localScale = Vector3.Lerp(
+                    outerGlow.transform.localScale, 
+                    Vector3.one * scale, 
+                    Time.deltaTime * 5f
+                );
             }
 
-            // Pulse subtil sur le bouton principal
+            // Pulse subtil sur le bouton principal - Enhanced
             if (buttonBackground != null && endTurnButton != null && endTurnButton.interactable)
             {
-                transform.localScale = originalScale * (1f + pulse * 0.05f);
+                float scale = 1f + smoothPulse * 0.08f; // Slightly more noticeable
+                transform.localScale = Vector3.Lerp(
+                    transform.localScale,
+                    originalScale * scale,
+                    Time.deltaTime * 5f
+                );
             }
 
             yield return null;
@@ -202,7 +222,7 @@ public class EndTurnButtonDesign : MonoBehaviour
     }
 
     /// <summary>
-    /// Active/Désactive le bouton avec effet visuel
+    /// Active/Dï¿½sactive le bouton avec effet visuel
     /// </summary>
     public void SetButtonInteractable(bool interactable)
     {
@@ -210,7 +230,7 @@ public class EndTurnButtonDesign : MonoBehaviour
         {
             endTurnButton.interactable = interactable;
 
-            // Désactive l'animation quand le bouton est disabled
+            // Dï¿½sactive l'animation quand le bouton est disabled
             enablePulseAnimation = interactable;
 
             if (!interactable)
@@ -226,7 +246,7 @@ public class EndTurnButtonDesign : MonoBehaviour
     }
 
     /// <summary>
-    /// Animation de clic (appelée depuis OnClick du Button)
+    /// Animation de clic (appelï¿½e depuis OnClick du Button)
     /// </summary>
     public void OnButtonClicked()
     {
@@ -235,23 +255,39 @@ public class EndTurnButtonDesign : MonoBehaviour
 
     IEnumerator ClickAnimation()
     {
-        // Scale down rapide
-        float duration = 0.1f;
+        // Enhanced scale down with smooth easing
+        float duration = 0.12f;
         float elapsed = 0f;
 
         while (elapsed < duration)
         {
-            float scale = Mathf.Lerp(1f, 0.9f, elapsed / duration);
+            float t = elapsed / duration;
+            float easeOut = 1f - Mathf.Pow(1f - t, 3f); // Cubic ease out
+            float scale = Mathf.Lerp(1f, 0.88f, easeOut); // Slightly more scale down
             transform.localScale = originalScale * scale;
             elapsed += Time.deltaTime;
             yield return null;
         }
 
-        // Scale up rapide
+        // Enhanced scale up with bounce effect
         elapsed = 0f;
         while (elapsed < duration)
         {
-            float scale = Mathf.Lerp(0.9f, 1f, elapsed / duration);
+            float t = elapsed / duration;
+            float easeOut = 1f - Mathf.Pow(1f - t, 2f); // Quadratic ease out
+            float scale = Mathf.Lerp(0.88f, 1.05f, easeOut); // Slight overshoot for bounce
+            transform.localScale = originalScale * scale;
+            elapsed += Time.deltaTime;
+            yield return null;
+        }
+
+        // Return to normal with smooth transition
+        elapsed = 0f;
+        float returnDuration = 0.08f;
+        while (elapsed < returnDuration)
+        {
+            float t = elapsed / returnDuration;
+            float scale = Mathf.Lerp(1.05f, 1f, t);
             transform.localScale = originalScale * scale;
             elapsed += Time.deltaTime;
             yield return null;

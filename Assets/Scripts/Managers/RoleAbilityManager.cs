@@ -4,7 +4,6 @@ using UnityEngine;
 public class RoleAbilityManager : MonoBehaviour
 {
     public static RoleAbilityManager Instance { get; private set; }
-    DeckManager deck;
 
     [Header("Game State")]
     public int playerCoins = 2;
@@ -25,10 +24,8 @@ public class RoleAbilityManager : MonoBehaviour
                 break;
 
             case AbilityType.PredictRole:
-                RevealRandomOpponentRole();
-                break;
-
             case AbilityType.PeekOtherCard:
+                // Both abilities reveal a random opponent role
                 RevealRandomOpponentRole();
                 break;
 
@@ -42,7 +39,8 @@ public class RoleAbilityManager : MonoBehaviour
                 break;
 
             case AbilityType.ShuffleRoles:
-                //deck.SchuffleCards();
+                // TODO: Implement deck shuffle functionality
+                Debug.Log("Shuffle roles ability triggered (not yet implemented)");
                 break;
 
             case AbilityType.Assassinate:

@@ -5,8 +5,10 @@ using TMPro;
 using System.Collections;
 
 /// <summary>
-/// VERSION ULTRA SIMPLE - Tout positionné en absolu
+/// [DEPRECATED] Use CardHover.cs instead for better integration with CardDisplay system.
+/// This class is kept for backward compatibility but should not be used in new code.
 /// </summary>
+[System.Obsolete("Use CardHover.cs instead. This class will be removed in a future version.")]
 public class CardHoverSystem : MonoBehaviour, IPointerEnterHandler, IPointerExitHandler
 {
     [Header("⚙️ Données de la Carte")]

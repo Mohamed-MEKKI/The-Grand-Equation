@@ -5,11 +5,11 @@ using TMPro;
 /// <summary>
 /// Panel du haut pour ELMAKINA
 /// Contient: Timer (gauche), Score/Info (centre), Pause (droite)
-/// Ce script crée automatiquement tous les éléments UI
+/// Ce script crï¿½e automatiquement tous les ï¿½lï¿½ments UI
 /// </summary>
 public class TopPanelUI : MonoBehaviour
 {
-    [Header("?? References (Auto-créées)")]
+    [Header("?? References (Auto-crï¿½ï¿½es)")]
     public GameObject timerPanel;
     public GameObject pauseButton;
     public GameObject centerInfoPanel;
@@ -21,18 +21,18 @@ public class TopPanelUI : MonoBehaviour
 
     void Start()
     {
-        // Vérifie que tout est créé
+        // Vï¿½rifie que tout est crï¿½ï¿½
         if (timerPanel == null || pauseButton == null)
         {
             Debug.LogError("? Utilise 'Create Top Panel' dans l'Inspector (clic droit sur script)");
             return;
         }
 
-        Debug.Log("? TopPanelUI initialisé");
+        Debug.Log("? TopPanelUI initialisï¿½");
     }
 
     /// <summary>
-    /// Met à jour le score du joueur
+    /// Met ï¿½ jour le score du joueur
     /// </summary>
     public void UpdatePlayerScore(int score)
     {
@@ -43,7 +43,7 @@ public class TopPanelUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Met à jour le score de l'adversaire
+    /// Met ï¿½ jour le score de l'adversaire
     /// </summary>
     public void UpdateOpponentScore(int score)
     {
@@ -54,7 +54,7 @@ public class TopPanelUI : MonoBehaviour
     }
 
     /// <summary>
-    /// Appelé quand le bouton pause est cliqué
+    /// Appelï¿½ quand le bouton pause est cliquï¿½
     /// </summary>
     public void OnPauseClicked()
     {
@@ -82,13 +82,13 @@ public class TopPanelUI : MonoBehaviour
     [ContextMenu("Create Top Panel")]
     public void CreateTopPanel()
     {
-        Debug.Log("?? Création du panel du haut...");
+        Debug.Log("?? Crï¿½ation du panel du haut...");
 
         // Trouve le Canvas
         Canvas canvas = GetComponentInParent<Canvas>();
         if (canvas == null)
         {
-            Debug.LogError("? Ce GameObject doit être dans un Canvas!");
+            Debug.LogError("? Ce GameObject doit ï¿½tre dans un Canvas!");
             return;
         }
 
@@ -99,32 +99,45 @@ public class TopPanelUI : MonoBehaviour
             mainRT = gameObject.AddComponent<RectTransform>();
         }
 
-        // Positionne en haut de l'écran
+        // Positionne en haut de l'ï¿½cran
         mainRT.anchorMin = new Vector2(0, 1);
         mainRT.anchorMax = new Vector2(1, 1);
         mainRT.pivot = new Vector2(0.5f, 1);
         mainRT.anchoredPosition = new Vector2(0, 0);
         mainRT.sizeDelta = new Vector2(0, 80); // Hauteur 80px
 
-        // Background noir transparent
+        // Background - Enhanced with gradient effect
         Image bgImage = gameObject.GetComponent<Image>();
         if (bgImage == null)
         {
             bgImage = gameObject.AddComponent<Image>();
         }
-        bgImage.color = new Color(0.02f, 0.02f, 0.04f, 0.85f);
+        // Richer dark background with subtle gradient
+        bgImage.color = new Color(0.05f, 0.05f, 0.08f, 0.92f);
+        
+        // Add subtle top border for depth
+        GameObject borderTop = CreateUIObject("BorderTop", transform);
+        RectTransform borderTopRT = borderTop.GetComponent<RectTransform>();
+        borderTopRT.anchorMin = new Vector2(0, 1);
+        borderTopRT.anchorMax = new Vector2(1, 1);
+        borderTopRT.pivot = new Vector2(0.5f, 1);
+        borderTopRT.anchoredPosition = Vector2.zero;
+        borderTopRT.sizeDelta = new Vector2(0, 1);
+        Image borderTopImg = borderTop.AddComponent<Image>();
+        borderTopImg.color = new Color(0.95f, 0.75f, 0.20f, 0.3f); // Subtle gold accent
 
-        // Bordure en bas
+        // Bordure en bas - Enhanced with gradient
         GameObject borderBottom = CreateUIObject("BorderBottom", transform);
         RectTransform borderRT = borderBottom.GetComponent<RectTransform>();
         borderRT.anchorMin = new Vector2(0, 0);
         borderRT.anchorMax = new Vector2(1, 0);
         borderRT.pivot = new Vector2(0.5f, 0);
         borderRT.anchoredPosition = Vector2.zero;
-        borderRT.sizeDelta = new Vector2(0, 2);
+        borderRT.sizeDelta = new Vector2(0, 3); // Slightly thicker
 
         Image borderImg = borderBottom.AddComponent<Image>();
-        borderImg.color = new Color(0.9f, 0.1f, 0.1f, 0.8f); // Rouge sang
+        // Enhanced red with better gradient effect
+        borderImg.color = new Color(0.86f, 0.15f, 0.15f, 0.9f); // Richer red
 
         // === TIMER PANEL (Gauche) ===
         CreateTimerPanel();
@@ -135,7 +148,7 @@ public class TopPanelUI : MonoBehaviour
         // === PAUSE BUTTON (Droite) ===
         CreatePauseButton();
 
-        Debug.Log("? Top Panel créé ! Appuie sur PLAY pour tester");
+        Debug.Log("? Top Panel crï¿½ï¿½ ! Appuie sur PLAY pour tester");
     }
 
     void CreateTimerPanel()
@@ -156,15 +169,20 @@ public class TopPanelUI : MonoBehaviour
         panelRT.anchoredPosition = new Vector2(20, 0);
         panelRT.sizeDelta = new Vector2(180, 60);
 
-        // Background
+        // Background - Enhanced with better depth
         Image panelBg = timerPanel.AddComponent<Image>();
-        panelBg.color = new Color(0.08f, 0.08f, 0.1f, 0.9f);
+        panelBg.color = new Color(0.10f, 0.10f, 0.14f, 0.95f); // Richer background
 
         Outline panelOutline = timerPanel.AddComponent<Outline>();
-        panelOutline.effectColor = new Color(0.9f, 0.1f, 0.1f, 0.6f);
-        panelOutline.effectDistance = new Vector2(2, 2);
+        panelOutline.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.7f); // Enhanced red border
+        panelOutline.effectDistance = new Vector2(3, 3); // Thicker border
+        
+        // Add shadow for depth
+        Shadow panelShadow = timerPanel.AddComponent<Shadow>();
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+        panelShadow.effectDistance = new Vector2(0, -3);
 
-        // Icône Timer (??)
+        // Icï¿½ne Timer (??)
         GameObject iconObj = CreateUIObject("Icon", timerPanel.transform);
         RectTransform iconRT = iconObj.GetComponent<RectTransform>();
         iconRT.anchorMin = new Vector2(0, 0.5f);
@@ -189,10 +207,15 @@ public class TopPanelUI : MonoBehaviour
 
         TextMeshProUGUI labelTxt = labelObj.AddComponent<TextMeshProUGUI>();
         labelTxt.text = "TEMPS";
-        labelTxt.fontSize = 12;
-        labelTxt.color = new Color(0.7f, 0.7f, 0.7f, 1f);
+        labelTxt.fontSize = 13; // Slightly larger
+        labelTxt.color = new Color(0.85f, 0.85f, 0.90f, 1f); // Lighter for better contrast
         labelTxt.alignment = TextAlignmentOptions.Center;
         labelTxt.fontStyle = FontStyles.Bold;
+        
+        // Add subtle outline to label
+        Outline labelOutline = labelObj.AddComponent<Outline>();
+        labelOutline.effectColor = new Color(0f, 0f, 0f, 0.6f);
+        labelOutline.effectDistance = new Vector2(1, 1);
 
         // Timer Text
         GameObject timerObj = CreateUIObject("TimerText", timerPanel.transform);
@@ -205,20 +228,27 @@ public class TopPanelUI : MonoBehaviour
 
         TextMeshProUGUI timerTxt = timerObj.AddComponent<TextMeshProUGUI>();
         timerTxt.text = "00:00";
-        timerTxt.fontSize = 28;
-        timerTxt.color = Color.white;
+        timerTxt.fontSize = 30; // Slightly larger
+        timerTxt.color = new Color(1f, 0.95f, 0.90f, 1f); // Warm white
         timerTxt.alignment = TextAlignmentOptions.Center;
         timerTxt.fontStyle = FontStyles.Bold;
 
-        AddTextOutline(timerObj, Color.black);
+        // Enhanced outline with shadow
+        Outline timerOutline = timerObj.AddComponent<Outline>();
+        timerOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+        timerOutline.effectDistance = new Vector2(3, 3);
+        
+        Shadow timerShadow = timerObj.AddComponent<Shadow>();
+        timerShadow.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.4f);
+        timerShadow.effectDistance = new Vector2(0, 2);
 
         // Ajoute le component GameTimer
         gameTimer = timerPanel.AddComponent<GameTimer>();
         gameTimer.timerText = timerTxt;
         gameTimer.labelText = labelTxt;
         gameTimer.isRunning = true;
-        gameTimer.countDown = false; // Chronomètre normal
-        gameTimer.maxTime = 0f; // Illimité
+        gameTimer.countDown = false; // Chronomï¿½tre normal
+        gameTimer.maxTime = 0f; // Illimitï¿½
     }
 
     void CreateCenterPanel()
@@ -239,13 +269,18 @@ public class TopPanelUI : MonoBehaviour
         panelRT.anchoredPosition = Vector2.zero;
         panelRT.sizeDelta = new Vector2(300, 60);
 
-        // Background
+        // Background - Enhanced
         Image panelBg = centerInfoPanel.AddComponent<Image>();
-        panelBg.color = new Color(0.08f, 0.08f, 0.1f, 0.9f);
+        panelBg.color = new Color(0.10f, 0.10f, 0.14f, 0.95f); // Richer background
 
         Outline panelOutline = centerInfoPanel.AddComponent<Outline>();
-        panelOutline.effectColor = new Color(0.9f, 0.1f, 0.1f, 0.6f);
-        panelOutline.effectDistance = new Vector2(2, 2);
+        panelOutline.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.7f); // Enhanced red border
+        panelOutline.effectDistance = new Vector2(3, 3); // Thicker border
+        
+        // Add shadow for depth
+        Shadow panelShadow = centerInfoPanel.AddComponent<Shadow>();
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+        panelShadow.effectDistance = new Vector2(0, -3);
 
         // Player Score (Gauche)
         GameObject playerScoreObj = CreateUIObject("PlayerScore", centerInfoPanel.transform);
@@ -258,12 +293,19 @@ public class TopPanelUI : MonoBehaviour
 
         playerScoreText = playerScoreObj.AddComponent<TextMeshProUGUI>();
         playerScoreText.text = "0";
-        playerScoreText.fontSize = 32;
-        playerScoreText.color = Color.white;
+        playerScoreText.fontSize = 34; // Slightly larger
+        playerScoreText.color = new Color(1f, 0.95f, 0.90f, 1f); // Warm white
         playerScoreText.alignment = TextAlignmentOptions.Center;
         playerScoreText.fontStyle = FontStyles.Bold;
 
-        AddTextOutline(playerScoreObj, Color.black);
+        // Enhanced outline with shadow
+        Outline playerOutline = playerScoreObj.AddComponent<Outline>();
+        playerOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+        playerOutline.effectDistance = new Vector2(3, 3);
+        
+        Shadow playerShadow = playerScoreObj.AddComponent<Shadow>();
+        playerShadow.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.4f);
+        playerShadow.effectDistance = new Vector2(0, 2);
 
         // VS (Centre)
         GameObject vsObj = CreateUIObject("VS", centerInfoPanel.transform);
@@ -276,12 +318,19 @@ public class TopPanelUI : MonoBehaviour
 
         TextMeshProUGUI vsTxt = vsObj.AddComponent<TextMeshProUGUI>();
         vsTxt.text = "VS";
-        vsTxt.fontSize = 18;
-        vsTxt.color = new Color(0.9f, 0.1f, 0.1f, 1f);
+        vsTxt.fontSize = 20; // Slightly larger
+        vsTxt.color = new Color(0.95f, 0.25f, 0.25f, 1f); // Brighter red
         vsTxt.alignment = TextAlignmentOptions.Center;
         vsTxt.fontStyle = FontStyles.Bold;
 
-        AddTextOutline(vsObj, Color.black);
+        // Enhanced outline with glow effect
+        Outline vsOutline = vsObj.AddComponent<Outline>();
+        vsOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+        vsOutline.effectDistance = new Vector2(2, 2);
+        
+        Shadow vsShadow = vsObj.AddComponent<Shadow>();
+        vsShadow.effectColor = new Color(0.95f, 0.25f, 0.25f, 0.6f);
+        vsShadow.effectDistance = new Vector2(0, 2);
 
         // Opponent Score (Droite)
         GameObject opponentScoreObj = CreateUIObject("OpponentScore", centerInfoPanel.transform);
@@ -294,12 +343,19 @@ public class TopPanelUI : MonoBehaviour
 
         opponentScoreText = opponentScoreObj.AddComponent<TextMeshProUGUI>();
         opponentScoreText.text = "0";
-        opponentScoreText.fontSize = 32;
-        opponentScoreText.color = Color.white;
+        opponentScoreText.fontSize = 34; // Slightly larger
+        opponentScoreText.color = new Color(1f, 0.95f, 0.90f, 1f); // Warm white
         opponentScoreText.alignment = TextAlignmentOptions.Center;
         opponentScoreText.fontStyle = FontStyles.Bold;
 
-        AddTextOutline(opponentScoreObj, Color.black);
+        // Enhanced outline with shadow
+        Outline opponentOutline = opponentScoreObj.AddComponent<Outline>();
+        opponentOutline.effectColor = new Color(0f, 0f, 0f, 0.9f);
+        opponentOutline.effectDistance = new Vector2(3, 3);
+        
+        Shadow opponentShadow = opponentScoreObj.AddComponent<Shadow>();
+        opponentShadow.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.4f);
+        opponentShadow.effectDistance = new Vector2(0, 2);
     }
 
     void CreatePauseButton()
@@ -320,28 +376,35 @@ public class TopPanelUI : MonoBehaviour
         btnRT.anchoredPosition = new Vector2(-20, 0);
         btnRT.sizeDelta = new Vector2(60, 60);
 
-        // Background
+        // Background - Enhanced
         Image btnBg = pauseButton.AddComponent<Image>();
-        btnBg.color = new Color(0.08f, 0.08f, 0.1f, 0.9f);
+        btnBg.color = new Color(0.10f, 0.10f, 0.14f, 0.95f); // Richer background
 
         // Button component
         Button btn = pauseButton.AddComponent<Button>();
         btn.onClick.AddListener(OnPauseClicked);
 
-        // Transition colors
+        // Transition colors - Enhanced with smoother transitions
         ColorBlock colors = btn.colors;
         colors.normalColor = new Color(1f, 1f, 1f, 1f);
-        colors.highlightedColor = new Color(0.9f, 0.1f, 0.1f, 1f);
-        colors.pressedColor = new Color(0.7f, 0.05f, 0.05f, 1f);
-        colors.selectedColor = new Color(0.9f, 0.1f, 0.1f, 1f);
+        colors.highlightedColor = new Color(0.95f, 0.25f, 0.25f, 1f); // Brighter red on hover
+        colors.pressedColor = new Color(0.75f, 0.10f, 0.10f, 1f); // Darker red on press
+        colors.selectedColor = new Color(0.95f, 0.25f, 0.25f, 1f);
+        colors.disabledColor = new Color(0.4f, 0.4f, 0.4f, 0.5f);
+        colors.fadeDuration = 0.2f; // Smoother transition
         btn.colors = colors;
 
-        // Outline
+        // Outline - Enhanced
         Outline btnOutline = pauseButton.AddComponent<Outline>();
-        btnOutline.effectColor = new Color(0.9f, 0.1f, 0.1f, 0.6f);
-        btnOutline.effectDistance = new Vector2(2, 2);
+        btnOutline.effectColor = new Color(0.86f, 0.15f, 0.15f, 0.7f); // Enhanced red border
+        btnOutline.effectDistance = new Vector2(3, 3); // Thicker border
+        
+        // Add shadow for depth
+        Shadow btnShadow = pauseButton.AddComponent<Shadow>();
+        btnShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+        btnShadow.effectDistance = new Vector2(0, -3);
 
-        // Icône Pause (?? ou ??)
+        // Icï¿½ne Pause (?? ou ??)
         GameObject iconObj = CreateUIObject("Icon", pauseButton.transform);
         RectTransform iconRT = iconObj.GetComponent<RectTransform>();
         SetFullRect(iconRT);

@@ -14,6 +14,8 @@ public class GameManager : MonoBehaviour
     public TextMeshProUGUI roundText;
     public TextMeshProUGUI turnText;
 
+    private CardDefiner lastClaimedRole;
+
     private void Awake()
     {
         if (Instance == null) { Instance = this;}
@@ -72,11 +74,12 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("PLAYER ENDED TURN");
 
-        // 1. Stop timer
+        // Stop timer
         if (TurnTimer.Instance != null)
             TurnTimer.Instance.StopTimer();
 
-        // 2. Opponent turn (INSTANT + FAST)
+        // End player turn and start opponent turn
+        isPlayerTurn = false;
         StartCoroutine(OpponentTurn());
     }
 
@@ -163,11 +166,84 @@ public class GameManager : MonoBehaviour
             RoleAbilityManager.Instance.ExecuteAbility(ability);
     }
 
+    // Consolidated method - calls EndTurn() for consistency
     public void EndPlayerTurn()
     {
-        if (PauseManager.Instance.isPaused) return;
-        StartCoroutine("PlayerTurn");
-        StopCoroutine(OpponentTurn());
-        Debug.Log("Your turn has been ended");
+        if (PauseManager.Instance != null && PauseManager.Instance.isPaused) return;
+        EndTurn();
+    }
+
+    public void LoseRandomCard(bool isPlayer)
+    {
+        HandManager.Instance.RemoveCardFromHand(
+            HandManager.Instance.GetRandomCard(isPlayer), isPlayer);
+    }
+
+    public void LoseSpecificCard(CardDefiner role)
+    {
+        // Find and remove the specific role card
+        GameObject targetCard = null;
+        var hand = isPlayerTurn ? HandManager.Instance.playerHandCards : HandManager.Instance.opponentHandCards;
+        foreach (var card in hand)
+        {
+            if (card.GetComponent<CardDisplay>().card.cardId == role.cardId)
+            {
+                targetCard = card;
+                break;
+            }
+        }
+        if (targetCard != null)
+            HandManager.Instance.RemoveCardFromHand(targetCard, isPlayerTurn);
+    }
+
+    private IEnumerator AIDecideChallenge()
+    {
+        yield return new WaitForSeconds(1.5f);  // Dramatic pause
+
+        // AI decides whether to challenge (50% chance)
+        if (Random.value < 0.5f)
+        {
+            ChallengeIssued();
+        }
+        else
+        {
+            Debug.Log("Opponent lets it pass...");
+        }
+    }
+
+    public void ChallengeIssued()
+    {
+        Debug.Log("OPPONENT CHALLENGES!");
+        ResolveChallenge(true);
+    }
+
+    public void ResolveChallenge(bool revealClaimed)
+    {
+        if (!revealClaimed || lastClaimedRole == null) return;
+
+        Debug.Log($"REVEAL: You had {lastClaimedRole.cardName}");
+
+        // TODO: Implement proper challenge resolution logic
+        // For now, assume player has the role (challenger loses)
+        bool playerHasRole = true; // TODO: Check if player actually has the role in hand
+        
+        if (playerHasRole)
+        {
+            // Player had the role → Challenger (opponent) loses card
+            LoseRandomCard(false);
+            Debug.Log("You had the role! Opponent loses a card.");
+        }
+        else
+        {
+            // Player lied → Player loses claimed card
+            LoseSpecificCard(lastClaimedRole);
+            Debug.Log("You lied! You lose the claimed card.");
+        }
+
+        // Hide challenge UI
+        if (ChallengeButton.Instance != null)
+            ChallengeButton.Instance.HideChallenge();
+
+        CheckWinCondition();
     }
 }

@@ -1,8 +1,5 @@
-using NUnit.Framework;
-using System;
 using System.Collections.Generic;
 using UnityEngine;
-using UnityEngine.EventSystems;
 
 public class HandManager : MonoBehaviour
 {
@@ -67,34 +64,28 @@ public class HandManager : MonoBehaviour
     {
         currentSelection = SelectionType.EliminateOpponentHand;
 
-        // Highlight ALL opponent cards (red glow)
+        // Add click handler to all opponent cards for selection
         foreach (var card in opponentHandCards)
         {
-            //var image = card.GetComponent<Image>();
-            //image.color = new Color(1, 0.3f, 0.3f, 0.8f);  // Red tint
-
-            // Add click handler dynamically
             var selector = card.GetComponent<CardSelector>();
             if (selector == null)
                 selector = card.AddComponent<CardSelector>();
             selector.selectionType = SelectionType.EliminateOpponentHand;
         }
 
-        Debug.Log("?? Elimination Mode: Click opponent's card!");
+        Debug.Log("Elimination Mode: Click opponent's card!");
     }    
 
     public void ExitEliminationMode()
     {
         currentSelection = SelectionType.None;
 
-        // Reset opponent hand colors
+        // Remove selectors from opponent cards
         foreach (var card in opponentHandCards)
         {
-            //var image = card.GetComponent<artworkImage>();
-            //image.color = Color.white;
-
-            // Remove selector
-            Destroy(card.GetComponent<CardSelector>());
+            var selector = card.GetComponent<CardSelector>();
+            if (selector != null)
+                Destroy(selector);
         }
     }
 
@@ -122,28 +113,38 @@ public class HandManager : MonoBehaviour
         playerHandCards.Clear();
         opponentHandCards.Clear();
     }
+    public GameObject GetRandomCard(bool isPlayer)
+    {
+        var hand = isPlayer ? playerHandCards : opponentHandCards;
+        if (hand.Count == 0) return null;
+        return hand[UnityEngine.Random.Range(0, hand.Count)];
+    }
     public void OpponentPlayRandomCard()
     {
         if (opponentHandCards.Count == 0) return;
 
-        int randomIndex = UnityEngine.Random.Range(0, opponentHandCards.Count);
+        int randomIndex = Random.Range(0, opponentHandCards.Count);
         GameObject playedCard = opponentHandCards[randomIndex];
-
-        // Remove from hand (reveals role)
         var display = playedCard.GetComponent<CardDisplay>();
-        display.SetFaceUp(true);  // Reveal opponent's role
 
-        RemoveCardFromHand(playedCard, false);
-
-        // Trigger opponent's ability
-        if (display.card != null)
+        if (display == null || display.card == null)
         {
-            foreach (var ability in display.card.abilities)
-            {
-                RoleAbilityManager.Instance.ExecuteAbility(ability);
-            }
+            Debug.LogWarning("Opponent card missing CardDisplay or card data!");
+            return;
         }
 
-        Debug.Log($"Opponent played: {display.card?.cardName}");
+        // Reveal opponent's role
+        display.SetFaceUp(true);
+
+        // Remove from hand
+        RemoveCardFromHand(playedCard, false); // false = opponent hand
+
+        // Trigger opponent's ability
+        foreach (var ability in display.card.abilities)
+        {
+            RoleAbilityManager.Instance.ExecuteAbility(ability);
+        }
+
+        Debug.Log($"Opponent played: {display.card.cardName}");
     }
 }

@@ -20,7 +20,6 @@ public class CardHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
     public void OnPointerEnter(PointerEventData eventData)
     {
-        Debug.Log("Hover ON");
         originalPos = rect.anchoredPosition;
         rect.anchoredPosition += Vector2.up * 50;
         rect.localScale = Vector3.one * 1.3f;
@@ -28,20 +27,28 @@ public class CardHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
 
         if (tooltipPanel && cardDisplay?.card != null)
         {
-            Powers.text = cardDisplay.card.possibleActions;
+            // Use enhanced tooltip text if abilities exist, otherwise use simple text
+            if (cardDisplay.card.abilities != null && cardDisplay.card.abilities.Length > 0)
+            {
+                Powers.text = BuildTooltipText(cardDisplay.card.abilities);
+            }
+            else
+            {
+                Powers.text = cardDisplay.card.possibleActions;
+            }
             tooltipPanel.SetActive(true);
         }
     }
 
     public void OnPointerExit(PointerEventData eventData)
     {
-        Debug.Log("Hover OFF");
         rect.anchoredPosition = originalPos;
         rect.localScale = Vector3.one;
         if (tooltipPanel) tooltipPanel.SetActive(false);
     }
 
-    void ShowTooltip()
+    // Consolidated tooltip methods - now integrated into OnPointerEnter/Exit
+    private void ShowTooltip()
     {
         if (tooltipPanel == null || cardDisplay?.card == null) return;
 
@@ -50,9 +57,9 @@ public class CardHover : MonoBehaviour, IPointerEnterHandler, IPointerExitHandle
         tooltipPanel.transform.SetAsLastSibling();
     }
 
-    void HideTooltip() => tooltipPanel?.SetActive(false);
+    private void HideTooltip() => tooltipPanel?.SetActive(false);
 
-    string BuildTooltipText(RoleAbility[] abilities)
+    private string BuildTooltipText(RoleAbility[] abilities)
     {
         var card = cardDisplay.card;
         if (abilities == null || abilities.Length == 0) return card.possibleActions;
