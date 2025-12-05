@@ -49,25 +49,8 @@ public class CardDragHandler : MonoBehaviour, IBeginDragHandler, IDragHandler, I
         canvasGroup.alpha = 1f;
         canvasGroup.blocksRaycasts = true;
 
-        // SAFETY: Check if HandManager exists
-        if (HandManager.Instance == null)
-        {
-            Debug.LogError("HandManager.Instance is NULL! Did you forget to add HandManager to the scene?");
-            ResetCardPosition();
-            return;
-        }
-
-        // SUCCESS: Drop anywhere = add to hand (no PlayZone needed)
-       
-        HandManager.Instance.AddCardToHand(gameObject, true); // true = player
-  
-
-
-        // Optional: rearrange hand
-        HandManager.Instance.ArrangeHand(true);
-
-        // If card was dragged from deck → keep it in hand
-        // If it was already in hand → it just snaps back nicely
+        // Always add to player hand (no PlayZone needed)
+        HandManager.Instance.AddCardToHand(gameObject, true);
     }
 
     private void ResetCardPosition()

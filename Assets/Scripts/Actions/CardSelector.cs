@@ -14,6 +14,13 @@ public class CardSelector : MonoBehaviour, IPointerClickHandler
         // Only allow elimination mode
         if (selectionType != HandManager.SelectionType.EliminateOpponentHand) return;
 
+        // SAFETY #2: Not in opponent hand? Ignore (can't eliminate own cards)
+        if (!HandManager.Instance.opponentHandCards.Contains(gameObject))
+        {
+            Debug.LogWarning("Can't eliminate own card!");
+            return;
+        }
+
         if (HandManager.Instance == null)
         {
             Debug.LogError("HandManager.Instance is NULL!");
@@ -27,6 +34,20 @@ public class CardSelector : MonoBehaviour, IPointerClickHandler
 
         HandManager.Instance.ExitEliminationMode();
 
+        StartCoroutine(DestroyEffect());
+    }
+
+    private void Eliminate()
+    {
+        Debug.Log($"ELIMINATED: {gameObject.name}");
+
+        // Remove from opponent's hand list
+        HandManager.Instance.opponentHandCards.Remove(gameObject);
+
+        // Rearrange opponent's hand
+        HandManager.Instance.ArrangeHand(false);  // false = opponent
+
+        // Destroy with cool effect
         StartCoroutine(DestroyEffect());
     }
 

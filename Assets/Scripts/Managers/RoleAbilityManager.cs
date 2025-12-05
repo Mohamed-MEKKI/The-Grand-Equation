@@ -42,7 +42,7 @@ public class RoleAbilityManager : MonoBehaviour
                 break;
 
             case AbilityType.ShuffleRoles:
-                deck.SchuffleCards();
+                //deck.SchuffleCards();
                 break;
 
             case AbilityType.Assassinate:

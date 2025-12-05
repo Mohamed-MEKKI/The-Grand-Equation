@@ -1,91 +1,138 @@
 ﻿using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.Rendering;
 
 public class GameManager : MonoBehaviour
 {
     public static GameManager Instance { get; private set; }
 
-    [Header("Managers")]
-    public DeckManager deckManager;
-    public HandManager handManager;
-
-    [Header("Game State")]
-    public int playerCoins = 0;
-    public int opponentCoins = 0;
-    public int playerMana = 1;
-    public int maxMana = 10;
+    [Header("Turn State")]
     public bool isPlayerTurn = true;
+    public int currentRound = 1;
 
-    [Header("UI References — DRAG THESE!")]
-    public TextMeshProUGUI playerCoinsText;
-    public TextMeshProUGUI opponentCoinsText;
+    [Header("UI")]
+    public TextMeshProUGUI roundText;
     public TextMeshProUGUI turnText;
 
-    void Awake()
+    private void Awake()
     {
-        if (Instance != null) { Destroy(gameObject); return; }
-        Instance = this;
-        DontDestroyOnLoad(gameObject);
+        if (Instance == null) { Instance = this;}
+        else Destroy(gameObject);
     }
 
-    void Start()
+    private IEnumerator Start()
     {
-        StartCoroutine(GameLoop());
+        if (DeckManager.Instance == null)
+        {
+            Debug.LogError("DeckManager.Instance is null. Cannot deal hands or start game loop.");
+            yield break;
+        }
+
+        Debug.Log("Starting DealHandsCoroutine and waiting for it to complete...");
+        // Ensure shuffle + initial dealing completes before starting the main game loop
+        yield return StartCoroutine(DeckManager.Instance.DealHandsCoroutine());
+
+        Debug.Log("Deal complete. Starting GameLoop...");
+        // Start the main game loop and wait for it to finish (game end)
+        yield return StartCoroutine(GameLoop());
     }
 
     IEnumerator GameLoop()
     {
-        // 1. Mulligan / Draw hands
-        yield return StartCoroutine(deckManager.StartGame());
-
-        // 2. Player turn loop
-        while (playerCoins > 0 && opponentCoins > 0)
+        while (true)  // Loop until someone wins
         {
             yield return StartCoroutine(PlayerTurn());
-            if (playerCoins <= 0) yield break;
+            if (CheckWinCondition()) yield break;
 
             yield return StartCoroutine(OpponentTurn());
-            if (opponentCoins <= 0) yield break;
-        }
+            if (CheckWinCondition()) yield break;
 
-        EndGame();
+            currentRound++;
+            if (roundText) roundText.text = $"Round {currentRound}";
+        }
     }
 
     IEnumerator PlayerTurn()
     {
         isPlayerTurn = true;
-        playerMana = Mathf.Min(playerMana + 1, maxMana);  // Mana refresh
-        UpdateUI();
+        UpdateTurnUI();
 
-        const float turnDuration = 50f; // 50 seconds per request
-        float elapsed = 0f;
+        // Start 1-minute timer
+        TurnTimer.Instance.StartTimer();
 
-        while (elapsed < turnDuration)
-        {
-            // If a PauseManager exists and the game is paused, wait without advancing elapsed time.
-            if (PauseManager.Instance != null && PauseManager.Instance.isPaused)
-            {
-                yield return null;
-                continue;
-            }
+        // Wait for player to end turn (button or timer)
+        yield return new WaitUntil(() => !isPlayerTurn);
 
-            elapsed += Time.deltaTime;
-            yield return null;
-        }
-
-        // Turn time expired, coroutine ends and GameLoop continues to opponent turn.
+        TurnTimer.Instance.StopTimer();
     }
 
-    IEnumerator OpponentTurn()
+    public void EndTurn()
+    {
+        if (!isPlayerTurn) return;
+
+        Debug.Log("PLAYER ENDED TURN");
+
+        // 1. Stop timer
+        if (TurnTimer.Instance != null)
+            TurnTimer.Instance.StopTimer();
+
+        // 2. Opponent turn (INSTANT + FAST)
+        StartCoroutine(OpponentTurn());
+    }
+
+    private IEnumerator OpponentTurn()
     {
         isPlayerTurn = false;
-        UpdateUI();
+        Debug.Log("OPPONENT TURN");
 
-        // Simple AI: Play 1-2 random cards
-        yield return new WaitForSeconds(2f);
-        handManager.OpponentPlayRandomCard();  // If you added this
+        // Opponent plays ONE card instantly
+        HandManager.Instance.OpponentPlayRandomCard();
+
+        // Tiny dramatic pause
+        yield return new WaitForSeconds(1.5f);
+
+        // Back to player — FAST!
+        StartPlayerTurn();
+    }
+
+    public void StartPlayerTurn()
+    {
+        isPlayerTurn = true;
+        Debug.Log("YOUR TURN");
+
+        // Restart 60-second timer
+        if (TurnTimer.Instance != null)
+            TurnTimer.Instance.StartTimer();
+    }
+
+
+
+    void UpdateTurnUI()
+    {
+        if (turnText != null)
+            turnText.text = isPlayerTurn ? "Your Turn" : "Opponent's Turn";
+    }
+
+    bool CheckWinCondition()
+    {
+        if (HandManager.Instance.playerHandCards.Count == 0)
+        {
+            ShowWinScreen("OPPONENT WINS!\nYou have no cards left.");
+            return true;
+        }
+        else if (HandManager.Instance.opponentHandCards.Count == 0)
+        {
+            ShowWinScreen("YOU WIN!\nOpponent has no cards left!");
+            return true;
+        }
+        return false;
+    }
+
+    void ShowWinScreen(string message)
+    {
+        Debug.Log("🎉 GAME OVER: " + message);
+        Time.timeScale = 0f;  // Pause game
+        // TODO: Show victory panel
     }
 
     public void PlayCard(CardDefiner cardDef, GameObject cardObj)
@@ -116,48 +163,11 @@ public class GameManager : MonoBehaviour
             RoleAbilityManager.Instance.ExecuteAbility(ability);
     }
 
-    public void UpdateUI()
-    {
-        // SAFETY: Prevent crash if references missing
-        if (playerCoinsText != null)
-            playerCoinsText.text = playerCoins.ToString();
-
-        if (opponentCoinsText != null)
-            opponentCoinsText.text = opponentCoins.ToString();
-
-        if (turnText != null)
-            turnText.text = isPlayerTurn ? "Your Turn" : "Opponent Turn";
-
-        // Optional: warn in console if missing
-        if (playerCoinsText == null) Debug.LogError("PlayerCoinsText not assigned!", this);
-        if (opponentCoinsText == null) Debug.LogError("OpponentCoinsText not assigned!", this);
-        if (turnText == null) Debug.LogError("TurnText not assigned!", this);
-    }
-
     public void EndPlayerTurn()
     {
         if (PauseManager.Instance.isPaused) return;
         StartCoroutine("PlayerTurn");
         StopCoroutine(OpponentTurn());
         Debug.Log("Your turn has been ended");
-    }
-
-
-    void EndGame()
-    {
-        Debug.Log(playerCoins == 0 ? "Player Wins!" : "Opponent Wins!");
-    }
-
-    IEnumerator ScaleIn(GameObject card)
-    {
-        RectTransform rt = card.GetComponent<RectTransform>();
-        rt.localScale = Vector3.zero;
-        float t = 0;
-        while (t < 0.3f)
-        {
-            t += Time.deltaTime;
-            rt.localScale = Vector3.Lerp(Vector3.zero, Vector3.one, t / 0.3f);
-            yield return null;
-        }
     }
 }

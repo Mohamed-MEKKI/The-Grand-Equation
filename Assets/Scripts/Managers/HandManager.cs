@@ -2,6 +2,7 @@ using NUnit.Framework;
 using System;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.EventSystems;
 
 public class HandManager : MonoBehaviour
 {
@@ -30,17 +31,17 @@ public class HandManager : MonoBehaviour
         else Destroy(gameObject);
     }
 
-    public void AddCardToHand(GameObject card, bool isPlayer)
+    public void AddCardToHand(GameObject cardObj, bool isPlayer)
     {
         if (isPlayer)
         {
-            playerHandCards.Add(card);
-            card.transform.SetParent(playerHandTransform, false);
+            playerHandCards.Add(cardObj);
+            cardObj.transform.SetParent(playerHandTransform, false);
         }
         else
         {
-            opponentHandCards.Add(card);
-            card.transform.SetParent(opponentHandTransform, false);
+            opponentHandCards.Add(cardObj);
+            cardObj.transform.SetParent(opponentHandTransform, false);
         }
         ArrangeHand(isPlayer);
     }
@@ -80,7 +81,7 @@ public class HandManager : MonoBehaviour
         }
 
         Debug.Log("?? Elimination Mode: Click opponent's card!");
-    }
+    }    
 
     public void ExitEliminationMode()
     {
@@ -99,28 +100,28 @@ public class HandManager : MonoBehaviour
 
     public void ArrangeHand(bool isPlayer)
     {
-        List<GameObject> cards = isPlayer ? playerHandCards : opponentHandCards;
-        Transform panel = isPlayer ? playerHandTransform : opponentHandTransform;
+        var handCards = isPlayer ? playerHandCards : opponentHandCards;
+        var handTransform = isPlayer ? playerHandTransform : opponentHandTransform;
 
-        if (cards.Count == 0) return;
+        if (handCards.Count == 0) return;
 
-        float spacing = 160f;
-        float totalWidth = (cards.Count - 1) * spacing;
+        float totalWidth = (handCards.Count - 1) * cardSpacing;
         float startX = -totalWidth / 2f;
 
-        for (int i = 0; i < cards.Count; i++)
+        for (int i = 0; i < handCards.Count; i++)
         {
-            RectTransform rt = cards[i].GetComponent<RectTransform>();
-            rt.anchoredPosition = new Vector2(startX + i * spacing, 0);
+            RectTransform rt = handCards[i].GetComponent<RectTransform>();
+            rt.anchoredPosition = new Vector2(startX + i * cardSpacing, 0f);
             rt.localScale = Vector3.one;
         }
     }
     public void ClearHands()
     {
+        foreach (var card in playerHandCards) if (card) Destroy(card);
+        foreach (var card in opponentHandCards) if (card) Destroy(card);
         playerHandCards.Clear();
         opponentHandCards.Clear();
     }
-
     public void OpponentPlayRandomCard()
     {
         if (opponentHandCards.Count == 0) return;
@@ -128,10 +129,21 @@ public class HandManager : MonoBehaviour
         int randomIndex = UnityEngine.Random.Range(0, opponentHandCards.Count);
         GameObject playedCard = opponentHandCards[randomIndex];
 
-        // "Play" to field (destroy from hand)
+        // Remove from hand (reveals role)
+        var display = playedCard.GetComponent<CardDisplay>();
+        display.SetFaceUp(true);  // Reveal opponent's role
+
         RemoveCardFromHand(playedCard, false);
 
-        // TODO: Spawn on opponent field
-        Debug.Log("Opponent played a card!");
+        // Trigger opponent's ability
+        if (display.card != null)
+        {
+            foreach (var ability in display.card.abilities)
+            {
+                RoleAbilityManager.Instance.ExecuteAbility(ability);
+            }
+        }
+
+        Debug.Log($"Opponent played: {display.card?.cardName}");
     }
 }
