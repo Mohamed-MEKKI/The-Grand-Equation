@@ -121,30 +121,60 @@ public class HandManager : MonoBehaviour
     }
     public void OpponentPlayRandomCard()
     {
-        if (opponentHandCards.Count == 0) return;
+        if (opponentHandCards.Count == 0)
+        {
+            Debug.LogWarning("Opponent has no cards to play!");
+            return;
+        }
 
         int randomIndex = Random.Range(0, opponentHandCards.Count);
         GameObject playedCard = opponentHandCards[randomIndex];
-        var display = playedCard.GetComponent<CardDisplay>();
-
-        if (display == null || display.card == null)
+        
+        if (playedCard == null)
         {
-            Debug.LogWarning("Opponent card missing CardDisplay or card data!");
+            Debug.LogError("Selected opponent card is null!");
+            opponentHandCards.RemoveAt(randomIndex);
             return;
         }
+
+        var display = playedCard.GetComponent<CardDisplay>();
+
+        if (display == null)
+        {
+            Debug.LogError("Opponent card missing CardDisplay component!");
+            RemoveCardFromHand(playedCard, false);
+            return;
+        }
+
+        if (display.card == null)
+        {
+            Debug.LogError("Opponent card missing card data!");
+            RemoveCardFromHand(playedCard, false);
+            return;
+        }
+
+        // Store card info before removing (card gets destroyed in RemoveCardFromHand)
+        string cardName = display.card.cardName;
+        RoleAbility[] abilities = display.card.abilities;
 
         // Reveal opponent's role
         display.SetFaceUp(true);
 
-        // Remove from hand
-        RemoveCardFromHand(playedCard, false); // false = opponent hand
-
-        // Trigger opponent's ability
-        foreach (var ability in display.card.abilities)
+        // Trigger opponent's abilities BEFORE removing card (prevents issues if card is destroyed)
+        if (abilities != null && RoleAbilityManager.Instance != null)
         {
-            RoleAbilityManager.Instance.ExecuteAbility(ability);
+            foreach (var ability in abilities)
+            {
+                if (ability != null)
+                {
+                    RoleAbilityManager.Instance.ExecuteAbility(ability);
+                }
+            }
         }
 
-        Debug.Log($"Opponent played: {display.card.cardName}");
+        // Remove from hand AFTER triggering abilities
+        RemoveCardFromHand(playedCard, false); // false = opponent hand
+
+        Debug.Log($"Opponent played: {cardName}");
     }
 }

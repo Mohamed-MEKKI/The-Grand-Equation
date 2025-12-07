@@ -247,7 +247,7 @@ public class TopPanelUI : MonoBehaviour
         gameTimer.timerText = timerTxt;
         gameTimer.labelText = labelTxt;
         gameTimer.isRunning = true;
-        gameTimer.countDown = false; // Chronom�tre normal
+        //gameTimer.countDown = false; // Chronom�tre normal
         gameTimer.maxTime = 0f; // Illimit�
     }
 

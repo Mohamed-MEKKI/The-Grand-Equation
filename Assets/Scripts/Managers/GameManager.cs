@@ -59,13 +59,24 @@ public class GameManager : MonoBehaviour
         isPlayerTurn = true;
         UpdateTurnUI();
 
-        // Start 1-minute timer
-        TurnTimer.Instance.StartTimer();
+        // Start 1-minute timer (if available)
+        if (TurnTimer.Instance != null)
+        {
+            TurnTimer.Instance.StartTimer();
+        }
+        else
+        {
+            Debug.LogWarning("TurnTimer.Instance is null! Timer will not work.");
+        }
 
         // Wait for player to end turn (button or timer)
         yield return new WaitUntil(() => !isPlayerTurn);
 
-        TurnTimer.Instance.StopTimer();
+        // Stop timer (if available)
+        if (TurnTimer.Instance != null)
+        {
+            TurnTimer.Instance.StopTimer();
+        }
     }
 
     public void EndTurn()
@@ -74,9 +85,11 @@ public class GameManager : MonoBehaviour
 
         Debug.Log("PLAYER ENDED TURN");
 
-        // Stop timer
+        // Stop timer (if available)
         if (TurnTimer.Instance != null)
+        {
             TurnTimer.Instance.StopTimer();
+        }
 
         // End player turn and start opponent turn
         isPlayerTurn = false;
@@ -89,7 +102,14 @@ public class GameManager : MonoBehaviour
         Debug.Log("OPPONENT TURN");
 
         // Opponent plays ONE card instantly
-        HandManager.Instance.OpponentPlayRandomCard();
+        if (HandManager.Instance != null)
+        {
+            HandManager.Instance.OpponentPlayRandomCard();
+        }
+        else
+        {
+            Debug.LogError("HandManager.Instance is null! Cannot play opponent card.");
+        }
 
         // Tiny dramatic pause
         yield return new WaitForSeconds(1.5f);
@@ -103,9 +123,15 @@ public class GameManager : MonoBehaviour
         isPlayerTurn = true;
         Debug.Log("YOUR TURN");
 
-        // Restart 60-second timer
+        // Restart 60-second timer (if available)
         if (TurnTimer.Instance != null)
+        {
             TurnTimer.Instance.StartTimer();
+        }
+        else
+        {
+            Debug.LogWarning("TurnTimer.Instance is null! Timer will not work.");
+        }
     }
 
 
@@ -141,29 +167,85 @@ public class GameManager : MonoBehaviour
     public void PlayCard(CardDefiner cardDef, GameObject cardObj)
     {
         // 1. Remove from hand
-        HandManager.Instance.RemoveCardFromHand(cardObj, true);
+        if (HandManager.Instance != null)
+        {
+            HandManager.Instance.RemoveCardFromHand(cardObj, true);
+        }
 
         // 2. Spawn on playfield (FACE DOWN)
         GameObject playedCard = Instantiate(cardObj);
         PlayedCard played = playedCard.GetComponent<PlayedCard>();
-        played.Setup(cardDef);
-        RoleAbilityManager.Instance.playerRoles.Add(played);
-
-        // 3. Trigger ability
-        foreach (var ability in cardDef.abilities)
+        if (played != null)
         {
-            RoleAbilityManager.Instance.ExecuteAbility(ability);
+            played.Setup(cardDef);
+            
+            // Add to player roles if RoleAbilityManager exists
+            if (RoleAbilityManager.Instance != null)
+            {
+                RoleAbilityManager.Instance.playerRoles.Add(played);
+            }
+        }
+
+        // 3. Trigger abilities
+        if (cardDef.abilities != null && RoleAbilityManager.Instance != null)
+        {
+            foreach (var ability in cardDef.abilities)
+            {
+                if (ability != null)
+                {
+                    RoleAbilityManager.Instance.ExecuteAbility(ability);
+                }
+            }
         }
 
         Debug.Log($"✅ Played {cardDef.cardName} → {cardDef.possibleActions}");
     }
 
+    // NEW METHOD — Bluff ANY role (even if you don't have it)
+    public void ClaimRoleByName(string roleName)
+    {
+        CardDefiner fakeRole = CardDatabase.cardList.Find(c => c.cardName == roleName);
+        if (fakeRole == null) return;
+
+        lastClaimedRole = fakeRole;  // ← Your existing variable!
+
+        Debug.Log($"BLUFF: You claim {roleName}");
+
+        // Execute the action IMMEDIATELY (your RoleAbilityManager does it!)
+        foreach (var ability in fakeRole.abilities)
+            RoleAbilityManager.Instance.ExecuteAbility(ability);
+
+        // Show challenge (your existing code)
+        ChallengeButton.Instance.ShowChallenge(roleName);
+
+        // AI challenge (your existing code)
+        StartCoroutine(AIDecideChallenge());
+    }
+
     public void ClaimRole(CardDefiner claimedRole)
     {
+        if (claimedRole == null)
+        {
+            Debug.LogError("Cannot claim null role!");
+            return;
+        }
+
         Debug.Log($"Player claims: {claimedRole.cardName} → {claimedRole.possibleActions}");
 
-        foreach (var ability in claimedRole.abilities)
-            RoleAbilityManager.Instance.ExecuteAbility(ability);
+        // Store last claimed role for challenge resolution
+        lastClaimedRole = claimedRole;
+
+        // Trigger abilities
+        if (claimedRole.abilities != null && RoleAbilityManager.Instance != null)
+        {
+            foreach (var ability in claimedRole.abilities)
+            {
+                if (ability != null)
+                {
+                    RoleAbilityManager.Instance.ExecuteAbility(ability);
+                }
+            }
+        }
     }
 
     // Consolidated method - calls EndTurn() for consistency
@@ -246,4 +328,5 @@ public class GameManager : MonoBehaviour
 
         CheckWinCondition();
     }
+
 }

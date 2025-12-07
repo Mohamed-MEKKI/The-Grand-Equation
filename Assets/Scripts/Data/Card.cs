@@ -8,6 +8,7 @@ public class CardData : ScriptableObject
     public string description;
     public Sprite artwork;
     public string possibleActions;
+    public bool canBeChallenged;
 
 }
 

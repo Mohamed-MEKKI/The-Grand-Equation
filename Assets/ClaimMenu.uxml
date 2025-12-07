@@ -1,0 +1,20 @@
+// 12/6/2025 AI-Tag
+// This was created with the help of Assistant, a Unity Artificial Intelligence product.
+
+<engine:UXML xmlns:engine="UnityEngine.UIElements">
+    <engine:VisualElement name="ClaimMenu" style="flex-grow: 1; flex-shrink: 1; flex-basis: auto; background-color: rgba(255, 255, 255, 0.392);">
+        <!-- Background -->
+        <engine:Image name="Background" style="background-image: url('Assets/Resources/ClaimMenuBackground.png'); background-size: cover; width: 100%; height: 100%;"></engine:Image>
+        
+        <!-- Menu Items -->
+        <engine:VisualElement name="MenuContainer" style="flex-direction: column; align-items: center; padding: 20px;">
+            <engine:Button name="ClaimAssassin" text="Claim Assassin Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white; margin-bottom: 10px;"></engine:Button>
+            <engine:Button name="ClaimThief" text="Claim Thief Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white; margin-bottom: 10px;"></engine:Button>
+            <engine:Button name="ClaimFiscality" text="Claim Fiscality Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white; margin-bottom: 10px;"></engine:Button>
+            <engine:Button name="ClaimGeneral" text="Claim General Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white; margin-bottom: 10px;"></engine:Button>
+            <engine:Button name="ClaimDeputy" text="Claim Deputy Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white; margin-bottom: 10px;"></engine:Button>
+            <engine:Button name="ClaimBoss" text="Claim Boss Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white; margin-bottom: 10px;"></engine:Button>
+            <engine:Button name="ClaimGuard" text="Claim Guard Reward" style="font-size: 18px; font-weight: bold; background-color: rgba(0, 0, 0, 0.5); color: white;"></engine:Button>
+        </engine:VisualElement>
+    </engine:VisualElement>
+</engine:UXML>

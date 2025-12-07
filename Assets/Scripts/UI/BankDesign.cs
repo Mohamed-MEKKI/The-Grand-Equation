@@ -35,164 +35,271 @@ public class BankDesign : MonoBehaviour
 
     void SetupBankDesign()
     {
-        // Main panel gradient - Enhanced with richer tones
-        Color panelTop = new Color(0.15f, 0.15f, 0.20f, 1f);
-        Color panelBottom = new Color(0.08f, 0.08f, 0.12f, 1f);
+        if (bankPanel == null)
+        {
+            Debug.LogError("BankDesign: bankPanel is not assigned! Please assign the main panel Image in the Inspector.");
+            return;
+        }
+
+        // Main panel - Bank building appearance (stone/marble texture effect)
+        // Darker, more solid bank building colors
+        Color panelTop = new Color(0.20f, 0.18f, 0.16f, 1f); // Warm stone top
+        Color panelBottom = new Color(0.12f, 0.10f, 0.08f, 1f); // Darker stone bottom
         CreateGradient(bankPanel, panelTop, panelBottom);
 
-        // Panel border - Multi-layered for depth
-        Outline panelOutline = bankPanel.gameObject.AddComponent<Outline>();
-        panelOutline.effectColor = new Color(0.25f, 0.25f, 0.30f, 0.8f);
-        panelOutline.effectDistance = new Vector2(3, 3);
+        // Panel border - Thick, solid bank building border
+        Outline panelOutline = bankPanel.gameObject.GetComponent<Outline>();
+        if (panelOutline == null)
+            panelOutline = bankPanel.gameObject.AddComponent<Outline>();
+        panelOutline.effectColor = new Color(0.35f, 0.30f, 0.25f, 1f); // Stone border
+        panelOutline.effectDistance = new Vector2(4, 4); // Thicker border for solid appearance
 
-        // Add shadow for depth
+        // Add deep shadow for building depth
         Shadow panelShadow = bankPanel.gameObject.GetComponent<Shadow>();
         if (panelShadow == null)
             panelShadow = bankPanel.gameObject.AddComponent<Shadow>();
-        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.6f);
-        panelShadow.effectDistance = new Vector2(0, -4);
+        panelShadow.effectColor = new Color(0f, 0f, 0f, 0.8f); // Deeper shadow
+        panelShadow.effectDistance = new Vector2(0, -6); // More depth
 
-        // Decorative borders - Enhanced gold gradient with better opacity
-        Color goldAccent = new Color(0.95f, 0.75f, 0.20f, 0.4f); // Brighter, more vibrant gold
-        topBorder.color = goldAccent;
-        CreateGradient(topBorder,
-            new Color(0, 0, 0, 0),
-            goldAccent,
-            new Color(0, 0, 0, 0));
-        bottomBorder.color = goldAccent;
-        CreateGradient(bottomBorder,
-            new Color(0, 0, 0, 0),
-            goldAccent,
-            new Color(0, 0, 0, 0));
-
-        // Header dots - Enhanced with glow effect
-        Color dotColor = new Color(0.98f, 0.82f, 0.25f, 1f); // Brighter gold
-        leftDot.color = dotColor;
-        rightDot.color = dotColor;
+        // Decorative borders - Bank counter/teller window style (brass/copper)
+        Color brassAccent = new Color(0.85f, 0.65f, 0.35f, 0.9f); // Rich brass/copper for bank counter
         
-        // Add glow to dots
-        Outline leftDotOutline = leftDot.gameObject.GetComponent<Outline>();
-        if (leftDotOutline == null) leftDotOutline = leftDot.gameObject.AddComponent<Outline>();
-        leftDotOutline.effectColor = new Color(0.95f, 0.75f, 0.20f, 0.6f);
-        leftDotOutline.effectDistance = new Vector2(3, 3);
-        
-        Outline rightDotOutline = rightDot.gameObject.GetComponent<Outline>();
-        if (rightDotOutline == null) rightDotOutline = rightDot.gameObject.AddComponent<Outline>();
-        rightDotOutline.effectColor = new Color(0.95f, 0.75f, 0.20f, 0.6f);
-        rightDotOutline.effectDistance = new Vector2(3, 3);
-
-        // Title styling - Enhanced contrast and readability
-        titleText.color = new Color(0.95f, 0.95f, 0.98f, 1f); // Near white for better contrast
-        if (titleText.GetComponent<Outline>() == null)
+        if (topBorder != null)
         {
-            Outline titleOutline = titleText.gameObject.AddComponent<Outline>();
-            titleOutline.effectColor = new Color(0f, 0f, 0f, 0.8f);
-            titleOutline.effectDistance = new Vector2(2, 2);
+            // Top border - Bank counter top (solid brass bar)
+            topBorder.color = brassAccent;
+            CreateGradient(topBorder,
+                new Color(0.75f, 0.55f, 0.25f, 0.9f), // Darker brass
+                brassAccent,
+                new Color(0.75f, 0.55f, 0.25f, 0.9f));
         }
         
-        subtitleText.color = new Color(0.65f, 0.65f, 0.72f, 1f); // Lighter for better readability
-        if (subtitleText.GetComponent<Outline>() == null)
+        if (bottomBorder != null)
         {
-            Outline subtitleOutline = subtitleText.gameObject.AddComponent<Outline>();
-            subtitleOutline.effectColor = new Color(0f, 0f, 0f, 0.6f);
-            subtitleOutline.effectDistance = new Vector2(1, 1);
+            // Bottom border - Bank foundation/base (solid stone)
+            bottomBorder.color = new Color(0.30f, 0.25f, 0.20f, 0.95f); // Dark stone foundation
+            CreateGradient(bottomBorder,
+                new Color(0.25f, 0.20f, 0.15f, 0.95f),
+                new Color(0.30f, 0.25f, 0.20f, 0.95f),
+                new Color(0.25f, 0.20f, 0.15f, 0.95f));
         }
 
-        // Safe door gradient - Enhanced metallic look
-        Color safeTop = new Color(0.22f, 0.22f, 0.28f, 1f);
-        Color safeBottom = new Color(0.14f, 0.14f, 0.18f, 1f);
-        CreateGradient(safeDoor, safeTop, safeBottom);
-
-        // Safe border - Enhanced with multiple effects
-        Outline safeBorder = safeDoor.gameObject.GetComponent<Outline>();
-        if (safeBorder == null) safeBorder = safeDoor.gameObject.AddComponent<Outline>();
-        safeBorder.effectColor = new Color(0.35f, 0.35f, 0.42f, 0.9f);
-        safeBorder.effectDistance = new Vector2(5, 5);
+        // Header dots - Bank window/ventilation elements (brass fixtures)
+        Color fixtureColor = new Color(0.80f, 0.60f, 0.30f, 1f); // Brass fixture color
         
-        Shadow safeShadow = safeDoor.gameObject.GetComponent<Shadow>();
-        if (safeShadow == null) safeShadow = safeDoor.gameObject.AddComponent<Shadow>();
-        safeShadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
-        safeShadow.effectDistance = new Vector2(0, -6);
+        if (leftDot != null)
+        {
+            leftDot.color = fixtureColor;
+            Outline leftDotOutline = leftDot.gameObject.GetComponent<Outline>();
+            if (leftDotOutline == null) leftDotOutline = leftDot.gameObject.AddComponent<Outline>();
+            leftDotOutline.effectColor = new Color(0.60f, 0.45f, 0.20f, 0.8f); // Darker brass outline
+            leftDotOutline.effectDistance = new Vector2(2, 2);
+            
+            // Add shadow for 3D fixture effect
+            Shadow leftDotShadow = leftDot.gameObject.GetComponent<Shadow>();
+            if (leftDotShadow == null) leftDotShadow = leftDot.gameObject.AddComponent<Shadow>();
+            leftDotShadow.effectColor = new Color(0f, 0f, 0f, 0.6f);
+            leftDotShadow.effectDistance = new Vector2(2, -2);
+        }
+        
+        if (rightDot != null)
+        {
+            rightDot.color = fixtureColor;
+            Outline rightDotOutline = rightDot.gameObject.GetComponent<Outline>();
+            if (rightDotOutline == null) rightDotOutline = rightDot.gameObject.AddComponent<Outline>();
+            rightDotOutline.effectColor = new Color(0.60f, 0.45f, 0.20f, 0.8f);
+            rightDotOutline.effectDistance = new Vector2(2, 2);
+            
+            Shadow rightDotShadow = rightDot.gameObject.GetComponent<Shadow>();
+            if (rightDotShadow == null) rightDotShadow = rightDot.gameObject.AddComponent<Shadow>();
+            rightDotShadow.effectColor = new Color(0f, 0f, 0f, 0.6f);
+            rightDotShadow.effectDistance = new Vector2(2, -2);
+        }
 
-        // Lock mechanism gradient - Enhanced gold with better contrast
-        Color lockTop = new Color(0.92f, 0.72f, 0.18f, 1f);
-        Color lockBottom = new Color(0.78f, 0.60f, 0.12f, 1f);
-        CreateGradient(lockMechanism, lockTop, lockBottom);
+        // Title styling - Bank sign appearance (brass/engraved letters)
+        if (titleText != null)
+        {
+            titleText.color = new Color(0.90f, 0.75f, 0.40f, 1f); // Brass/gold bank sign color
+            if (titleText.GetComponent<Outline>() == null)
+            {
+                Outline titleOutline = titleText.gameObject.AddComponent<Outline>();
+                titleOutline.effectColor = new Color(0.50f, 0.35f, 0.15f, 1f); // Dark brass outline for engraved effect
+                titleOutline.effectDistance = new Vector2(3, 3);
+            }
+            
+            // Add shadow for 3D engraved sign effect
+            Shadow titleShadow = titleText.gameObject.GetComponent<Shadow>();
+            if (titleShadow == null) titleShadow = titleText.gameObject.AddComponent<Shadow>();
+            titleShadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+            titleShadow.effectDistance = new Vector2(2, -2);
+        }
+        
+        if (subtitleText != null)
+        {
+            subtitleText.color = new Color(0.75f, 0.65f, 0.50f, 1f); // Lighter brass for subtitle
+            if (subtitleText.GetComponent<Outline>() == null)
+            {
+                Outline subtitleOutline = subtitleText.gameObject.AddComponent<Outline>();
+                subtitleOutline.effectColor = new Color(0.40f, 0.30f, 0.15f, 0.9f); // Darker brass outline
+                subtitleOutline.effectDistance = new Vector2(2, 2);
+            }
+        }
 
-        // Lock border - Enhanced
-        Outline lockBorder = lockMechanism.gameObject.GetComponent<Outline>();
-        if (lockBorder == null) lockBorder = lockMechanism.gameObject.AddComponent<Outline>();
-        lockBorder.effectColor = new Color(0.65f, 0.50f, 0.10f, 0.9f);
-        lockBorder.effectDistance = new Vector2(5, 5);
+        // Safe door - Realistic bank vault door (heavy steel)
+        if (safeDoor != null)
+        {
+            // Dark steel vault door with metallic gradient
+            Color safeTop = new Color(0.25f, 0.25f, 0.28f, 1f); // Lighter steel at top
+            Color safeBottom = new Color(0.15f, 0.15f, 0.18f, 1f); // Darker steel at bottom
+            CreateGradient(safeDoor, safeTop, safeBottom);
 
-        // Lock center - Enhanced contrast
-        lockCenter.color = new Color(0.10f, 0.10f, 0.14f, 1f);
-        Outline lockCenterBorder = lockCenter.gameObject.GetComponent<Outline>();
-        if (lockCenterBorder == null) lockCenterBorder = lockCenter.gameObject.AddComponent<Outline>();
-        lockCenterBorder.effectColor = new Color(0.55f, 0.42f, 0.08f, 0.9f);
-        lockCenterBorder.effectDistance = new Vector2(3, 3);
+            // Thick steel border - Bank vault door frame
+            Outline safeBorder = safeDoor.gameObject.GetComponent<Outline>();
+            if (safeBorder == null) safeBorder = safeDoor.gameObject.AddComponent<Outline>();
+            safeBorder.effectColor = new Color(0.40f, 0.40f, 0.45f, 1f); // Steel frame
+            safeBorder.effectDistance = new Vector2(6, 6); // Very thick for heavy vault door
+            
+            // Deep inset shadow - Vault door is recessed
+            Shadow safeShadow = safeDoor.gameObject.GetComponent<Shadow>();
+            if (safeShadow == null) safeShadow = safeDoor.gameObject.AddComponent<Shadow>();
+            safeShadow.effectColor = new Color(0f, 0f, 0f, 0.9f); // Very dark shadow
+            safeShadow.effectDistance = new Vector2(0, -8); // Deep inset
+        }
 
-        // Lock marks - Enhanced visibility
+        // Lock mechanism - Bank vault combination dial (brass/gold)
+        if (lockMechanism != null)
+        {
+            // Brass combination dial with metallic shine
+            Color lockTop = new Color(0.88f, 0.68f, 0.25f, 1f); // Bright brass top
+            Color lockBottom = new Color(0.70f, 0.50f, 0.15f, 1f); // Darker brass bottom
+            CreateGradient(lockMechanism, lockTop, lockBottom);
+
+            // Lock border - Brass dial rim
+            Outline lockBorder = lockMechanism.gameObject.GetComponent<Outline>();
+            if (lockBorder == null) lockBorder = lockMechanism.gameObject.AddComponent<Outline>();
+            lockBorder.effectColor = new Color(0.60f, 0.45f, 0.15f, 1f); // Dark brass rim
+            lockBorder.effectDistance = new Vector2(4, 4);
+            
+            // Shadow for 3D dial effect
+            Shadow lockShadow = lockMechanism.gameObject.GetComponent<Shadow>();
+            if (lockShadow == null) lockShadow = lockMechanism.gameObject.AddComponent<Shadow>();
+            lockShadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+            lockShadow.effectDistance = new Vector2(0, -3);
+        }
+
+        // Lock center - Vault dial center (dark with brass ring)
+        if (lockCenter != null)
+        {
+            lockCenter.color = new Color(0.08f, 0.08f, 0.10f, 1f); // Very dark center
+            Outline lockCenterBorder = lockCenter.gameObject.GetComponent<Outline>();
+            if (lockCenterBorder == null) lockCenterBorder = lockCenter.gameObject.AddComponent<Outline>();
+            lockCenterBorder.effectColor = new Color(0.75f, 0.55f, 0.20f, 1f); // Brass ring
+            lockCenterBorder.effectDistance = new Vector2(3, 3);
+        }
+
+        // Lock marks - Combination dial numbers/marks (brass)
         foreach (Image mark in lockMarks)
         {
             if (mark != null)
             {
-                mark.color = new Color(0.55f, 0.42f, 0.08f, 1f);
+                mark.color = new Color(0.85f, 0.65f, 0.30f, 1f); // Bright brass marks
                 Outline markOutline = mark.gameObject.GetComponent<Outline>();
                 if (markOutline == null) markOutline = mark.gameObject.AddComponent<Outline>();
-                markOutline.effectColor = new Color(0.35f, 0.27f, 0.05f, 0.6f);
+                markOutline.effectColor = new Color(0.50f, 0.35f, 0.10f, 0.8f); // Darker brass outline
                 markOutline.effectDistance = new Vector2(1, 1);
             }
         }
 
-        // Bolts - Enhanced metallic look
+        // Bolts - Heavy steel vault door bolts
         foreach (Image bolt in bolts)
         {
             if (bolt != null)
             {
-                bolt.color = new Color(0.50f, 0.50f, 0.58f, 1f);
+                bolt.color = new Color(0.35f, 0.35f, 0.40f, 1f); // Dark steel bolts
                 Outline boltOutline = bolt.gameObject.GetComponent<Outline>();
                 if (boltOutline == null) boltOutline = bolt.gameObject.AddComponent<Outline>();
-                boltOutline.effectColor = new Color(0.25f, 0.25f, 0.30f, 0.6f);
+                boltOutline.effectColor = new Color(0.50f, 0.50f, 0.55f, 0.9f); // Lighter steel rim
                 boltOutline.effectDistance = new Vector2(2, 2);
+                
+                // Shadow for 3D bolt effect
+                Shadow boltShadow = bolt.gameObject.GetComponent<Shadow>();
+                if (boltShadow == null) boltShadow = bolt.gameObject.AddComponent<Shadow>();
+                boltShadow.effectColor = new Color(0f, 0f, 0f, 0.7f);
+                boltShadow.effectDistance = new Vector2(1, -2);
             }
         }
 
-        // Handle gradient - Enhanced
-        Color handleLeft = new Color(0.80f, 0.62f, 0.15f, 1f);
-        Color handleRight = new Color(0.92f, 0.72f, 0.18f, 1f);
-        CreateGradientHorizontal(handle, handleLeft, handleRight);
+        // Handle - Bank vault door handle (heavy brass)
+        if (handle != null)
+        {
+            // Brass handle with metallic gradient
+            Color handleLeft = new Color(0.75f, 0.55f, 0.20f, 1f); // Darker brass
+            Color handleRight = new Color(0.90f, 0.70f, 0.30f, 1f); // Brighter brass
+            CreateGradientHorizontal(handle, handleLeft, handleRight);
 
-        Outline handleBorder = handle.gameObject.GetComponent<Outline>();
-        if (handleBorder == null) handleBorder = handle.gameObject.AddComponent<Outline>();
-        handleBorder.effectColor = new Color(0.65f, 0.50f, 0.10f, 0.9f);
-        handleBorder.effectDistance = new Vector2(3, 3);
+            Outline handleBorder = handle.gameObject.GetComponent<Outline>();
+            if (handleBorder == null) handleBorder = handle.gameObject.AddComponent<Outline>();
+            handleBorder.effectColor = new Color(0.55f, 0.40f, 0.12f, 1f); // Dark brass border
+            handleBorder.effectDistance = new Vector2(3, 3);
+            
+            // Shadow for 3D handle
+            Shadow handleShadow = handle.gameObject.GetComponent<Shadow>();
+            if (handleShadow == null) handleShadow = handle.gameObject.AddComponent<Shadow>();
+            handleShadow.effectColor = new Color(0f, 0f, 0f, 0.8f);
+            handleShadow.effectDistance = new Vector2(0, -4);
+        }
 
-        // Glow effect - Enhanced with better gradient
-        CreateGradient(glowEffect,
-            new Color(0.98f, 0.82f, 0.25f, 0.08f),
-            new Color(0.95f, 0.75f, 0.20f, 0.12f),
-            new Color(0, 0, 0, 0));
+        // Glow effect - Subtle bank vault lighting (warm, dim)
+        if (glowEffect != null)
+        {
+            CreateGradient(glowEffect,
+                new Color(0.85f, 0.70f, 0.40f, 0.06f), // Warm brass glow top
+                new Color(0.75f, 0.60f, 0.30f, 0.10f), // Brighter center
+                new Color(0, 0, 0, 0)); // Fade to transparent
+        }
 
-        // Info panels - Enhanced with better visibility
-        Color panelColor = new Color(0.14f, 0.14f, 0.18f, 0.65f);
-        depositsPanel.color = panelColor;
-        withdrawalsPanel.color = panelColor;
+        // Info panels - Bank teller window/info boards (wood/brass)
+        Color panelColor = new Color(0.18f, 0.15f, 0.12f, 0.85f); // Dark wood panel color
         
-        // Add subtle borders to info panels
-        Outline depositsOutline = depositsPanel.gameObject.GetComponent<Outline>();
-        if (depositsOutline == null) depositsOutline = depositsPanel.gameObject.AddComponent<Outline>();
-        depositsOutline.effectColor = new Color(0.95f, 0.75f, 0.20f, 0.3f);
-        depositsOutline.effectDistance = new Vector2(2, 2);
+        if (depositsPanel != null)
+        {
+            depositsPanel.color = panelColor;
+            Outline depositsOutline = depositsPanel.gameObject.GetComponent<Outline>();
+            if (depositsOutline == null) depositsOutline = depositsPanel.gameObject.AddComponent<Outline>();
+            depositsOutline.effectColor = new Color(0.70f, 0.55f, 0.30f, 0.6f); // Brass frame
+            depositsOutline.effectDistance = new Vector2(3, 3);
+            
+            Shadow depositsShadow = depositsPanel.gameObject.GetComponent<Shadow>();
+            if (depositsShadow == null) depositsShadow = depositsPanel.gameObject.AddComponent<Shadow>();
+            depositsShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            depositsShadow.effectDistance = new Vector2(0, -2);
+        }
         
-        Outline withdrawalsOutline = withdrawalsPanel.gameObject.GetComponent<Outline>();
-        if (withdrawalsOutline == null) withdrawalsOutline = withdrawalsPanel.gameObject.AddComponent<Outline>();
-        withdrawalsOutline.effectColor = new Color(0.95f, 0.75f, 0.20f, 0.3f);
-        withdrawalsOutline.effectDistance = new Vector2(2, 2);
+        if (withdrawalsPanel != null)
+        {
+            withdrawalsPanel.color = panelColor;
+            Outline withdrawalsOutline = withdrawalsPanel.gameObject.GetComponent<Outline>();
+            if (withdrawalsOutline == null) withdrawalsOutline = withdrawalsPanel.gameObject.AddComponent<Outline>();
+            withdrawalsOutline.effectColor = new Color(0.70f, 0.55f, 0.30f, 0.6f); // Brass frame
+            withdrawalsOutline.effectDistance = new Vector2(3, 3);
+            
+            Shadow withdrawalsShadow = withdrawalsPanel.gameObject.GetComponent<Shadow>();
+            if (withdrawalsShadow == null) withdrawalsShadow = withdrawalsPanel.gameObject.AddComponent<Shadow>();
+            withdrawalsShadow.effectColor = new Color(0f, 0f, 0f, 0.5f);
+            withdrawalsShadow.effectDistance = new Vector2(0, -2);
+        }
+        
+        Debug.Log("BankDesign: Setup completed successfully!");
     }
 
     void CreateGradient(Image img, Color top, Color bottom)
     {
+        if (img == null)
+        {
+            Debug.LogWarning("BankDesign: Cannot create gradient - Image is null!");
+            return;
+        }
+
         Texture2D texture = new Texture2D(1, 128);
         for (int i = 0; i < 128; i++)
         {
@@ -204,6 +311,12 @@ public class BankDesign : MonoBehaviour
 
     void CreateGradient(Image img, Color left, Color middle, Color right)
     {
+        if (img == null)
+        {
+            Debug.LogWarning("BankDesign: Cannot create gradient - Image is null!");
+            return;
+        }
+
         Texture2D texture = new Texture2D(256, 1);
         for (int i = 0; i < 256; i++)
         {
@@ -219,6 +332,12 @@ public class BankDesign : MonoBehaviour
 
     void CreateGradientHorizontal(Image img, Color left, Color right)
     {
+        if (img == null)
+        {
+            Debug.LogWarning("BankDesign: Cannot create gradient - Image is null!");
+            return;
+        }
+
         Texture2D texture = new Texture2D(128, 1);
         for (int i = 0; i < 128; i++)
         {

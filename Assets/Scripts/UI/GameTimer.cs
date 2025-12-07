@@ -1,227 +1,152 @@
 ﻿using UnityEngine;
 using TMPro;
-using System;
-
 
 public class GameTimer : MonoBehaviour
 {
-    [Header("⏱️ Configuration")]
-    [Tooltip("Temps maximum en secondes (0 = illimité)")]
-    public float maxTime = 0f; // 0 = compte à l'infini
+    public float maxTime = 100f; // Maximum time for the timer
+    private float countDown; // Current countdown value
+    public TextMeshProUGUI timerText; // Reference to TimerText
+    public TextMeshProUGUI labelText; // Reference to TimerLabel
+    public bool isRunning = true; // Is the timer running?
+    public bool isPaused = false; // Is the timer paused?
 
-    [Tooltip("Décompte (compte à rebours) ou compte normal")]
-    public bool countDown = false;
+    [SerializeField] private AudioSource tickAudioSource; // assign in Inspector (preferred)
+    [SerializeField] private AudioSource alarmAudioSource; // assign in Inspector (preferred)
 
-    [Header("🎨 UI References")]
-    public TextMeshProUGUI timerText;
-    public TextMeshProUGUI labelText; // "TEMPS" ou "TIME"
+    private int lastWholeSecond; // To track ticks
+    private bool alarmMuted = true; // start muted by code (can also mute in Inspector)
 
-    [Header("⚙️ État")]
-    public bool isRunning = true;
-    public bool isPaused = false;
-
-    // Variables internes
-    private float currentTime = 0f;
-    private Color normalColor = Color.white;
-    private Color warningColor = new Color(1f, 0.5f, 0f, 1f); // Orange
-    private Color dangerColor = new Color(0.9f, 0.1f, 0.1f, 1f); // Rouge sang
-
-    void Start()
+    private void Start()
     {
-        if (timerText == null)
+        // Fallback: automatically find and assign if not set in Inspector
+        if (tickAudioSource == null || alarmAudioSource == null)
         {
-            Debug.LogError("❌ ERREUR: timerText n'est pas assigné dans l'Inspector!");
-            return;
-        }
-
-        // Initialise le temps
-        if (countDown && maxTime > 0)
-        {
-            currentTime = maxTime;
-        }
-        else
-        {
-            currentTime = 0f;
-        }
-
-        UpdateDisplay();
-        Debug.Log($"✅ GameTimer initialisé - Mode: {(countDown ? "Décompte" : "Chronomètre")}");
-    }
-
-    void Update()
-    {
-        if (!isRunning || isPaused)
-            return;
-
-        // Update le temps
-        if (countDown)
-        {
-            currentTime -= Time.deltaTime;
-
-            // Temps écoulé
-            if (currentTime <= 0f)
+            AudioSource[] audioSources = GetComponents<AudioSource>();
+            if (audioSources.Length >= 2)
             {
-                currentTime = 0f;
-                isRunning = false;
-                OnTimeUp();
-            }
-        }
-        else
-        {
-            currentTime += Time.deltaTime;
-
-            // Si temps max défini
-            if (maxTime > 0 && currentTime >= maxTime)
-            {
-                currentTime = maxTime;
-                isRunning = false;
-                OnTimeUp();
-            }
-        }
-
-        UpdateDisplay();
-    }
-
-    void UpdateDisplay()
-    {
-        if (timerText == null)
-            return;
-
-        // Format: MM:SS
-        TimeSpan timeSpan = TimeSpan.FromSeconds(currentTime);
-        string timeString = string.Format("{0:00}:{1:00}",
-            Mathf.FloorToInt((float)timeSpan.TotalMinutes),
-            timeSpan.Seconds);
-
-        timerText.text = timeString;
-
-        // Change la couleur selon le temps restant (en mode décompte)
-        if (countDown && maxTime > 0)
-        {
-            float percentage = currentTime / maxTime;
-
-            if (percentage <= 0.1f) // 10% restant
-            {
-                timerText.color = dangerColor;
-                // Effet de pulsation
-                float pulse = Mathf.PingPong(Time.time * 2f, 1f);
-                timerText.color = Color.Lerp(dangerColor, Color.white, pulse * 0.3f);
-            }
-            else if (percentage <= 0.25f) // 25% restant
-            {
-                timerText.color = warningColor;
+                tickAudioSource ??= audioSources[0];
+                alarmAudioSource ??= audioSources[1];
             }
             else
             {
-                timerText.color = normalColor;
+                Debug.LogError("Timer GameObject requires two AudioSource components or assign them in the Inspector!");
             }
         }
-    }
-
-    void OnTimeUp()
-    {
-        Debug.Log("⏰ Temps écoulé!");
-        // Ici tu peux appeler un événement ou une fonction
-        // Exemple: GameManager.Instance.OnTimerFinished();
-    }
-
-    // === MÉTHODES PUBLIQUES ===
-    public void StartTimer()
-    {
-        isRunning = true;
-        isPaused = false;
-
-        if (countDown && maxTime > 0)
+            
+        // Defensive: stop any accidental playback at start
+        if (tickAudioSource != null) tickAudioSource.Stop();
+        if (alarmAudioSource != null)
         {
-            currentTime = maxTime;
-        }
-        else
-        {
-            currentTime = 0f;
+            alarmAudioSource.Stop();
+            alarmAudioSource.mute = alarmMuted; // start muted
         }
 
-        Debug.Log("▶️ Timer démarré");
+        countDown = maxTime;
+        lastWholeSecond = Mathf.FloorToInt(countDown);
+        UpdateTimerText();
+    }
+
+    private void Update()
+    {
+        if (isRunning && !isPaused)
+        {
+            countDown -= Time.deltaTime;
+            int currentSecond = Mathf.FloorToInt(countDown);
+
+            // Play tick sound once per second when we cross a whole-second boundary,
+            // but do NOT play a tick for the 0 second (prevent overlap with alarm).
+            if (currentSecond < lastWholeSecond && currentSecond > 0 && tickAudioSource != null)
+            {
+                tickAudioSource.Play();
+                Debug.Log($"Tick played for second {currentSecond}");
+                lastWholeSecond = currentSecond;
+            }
+
+            // Finish when countdown reaches or goes below zero (handle overshoot)
+            if (countDown <= 0f)
+            {
+                countDown = 0f;
+                isRunning = false;
+                TimerFinished();
+            }
+
+            UpdateTimerText();
+        }
+    }
+
+    private void UpdateTimerText()
+    {
+        // Check if timerText is assigned before accessing it
+        if (timerText == null)
+        {
+            return;
+        }
+        
+        float displayTime = Mathf.Max(0f, countDown);
+        int minutes = Mathf.FloorToInt(displayTime / 60f);
+        int seconds = Mathf.FloorToInt(displayTime % 60f);
+        timerText.text = minutes.ToString("00") + ":" + seconds.ToString("00");
+    }
+
+    private void TimerFinished()
+    {
+        // Check if labelText is assigned before accessing it
+        if (labelText != null)
+        {
+            labelText.text = "Time's Up!";
+        }
+
+        // Defensive: stop the ticking sound before playing the alarm to avoid overlap.
+        if (tickAudioSource != null && tickAudioSource.isPlaying)
+        {
+            tickAudioSource.Stop();
+        }
+
+        if (alarmAudioSource != null)
+        {
+            // Ensure alarm is unmuted right before playing
+            UnmuteAlarm();
+            alarmAudioSource.Stop(); // ensure clean start
+            alarmAudioSource.Play();
+            Debug.Log("Alarm played");
+        }
+    }
+
+    // Public control for muting/unmuting the alarm at runtime
+    public void MuteAlarm()
+    {
+        alarmMuted = true;
+        if (alarmAudioSource != null) alarmAudioSource.mute = true;
+    }
+
+    public void UnmuteAlarm()
+    {
+        alarmMuted = false;
+        if (alarmAudioSource != null) alarmAudioSource.mute = false;
+    }
+
+    public void ToggleAlarmMute()
+    {
+        alarmMuted = !alarmMuted;
+        if (alarmAudioSource != null) alarmAudioSource.mute = alarmMuted;
     }
 
     public void PauseTimer()
     {
         isPaused = true;
-        Debug.Log("⏸️ Timer en pause");
     }
-
 
     public void ResumeTimer()
     {
         isPaused = false;
-        Debug.Log("▶️ Timer repris");
     }
 
-    /// <summary>
-    /// Arrête le timer
-    /// </summary>
-    public void StopTimer()
-    {
-        isRunning = false;
-        isPaused = false;
-        Debug.Log("⏹️ Timer arrêté");
-    }
-
-    /// <summary>
-    /// Reset le timer à 0 (ou maxTime si décompte)
-    /// </summary>
     public void ResetTimer()
     {
-        if (countDown && maxTime > 0)
-        {
-            currentTime = maxTime;
-        }
-        else
-        {
-            currentTime = 0f;
-        }
-
-        UpdateDisplay();
-        Debug.Log("🔄 Timer réinitialisé");
-    }
-
-    /// <summary>
-    /// Ajoute du temps (utile pour bonus)
-    /// </summary>
-    public void AddTime(float seconds)
-    {
-        if (countDown)
-        {
-            currentTime += seconds;
-            if (maxTime > 0 && currentTime > maxTime)
-                currentTime = maxTime;
-        }
-        else
-        {
-            currentTime += seconds;
-        }
-
-        Debug.Log($"➕ {seconds}s ajoutées");
-    }
-
-    public void RemoveTime(float seconds)
-    {
-        currentTime -= seconds;
-        if (currentTime < 0f)
-            currentTime = 0f;
-
-        Debug.Log($"➖ {seconds}s retirées");
-    }
-
-    public float GetCurrentTime()
-    {
-        return currentTime;
-    }
-
-    public string GetFormattedTime()
-    {
-        TimeSpan timeSpan = TimeSpan.FromSeconds(currentTime);
-        return string.Format("{0:00}:{1:00}",
-            Mathf.FloorToInt((float)timeSpan.TotalMinutes),
-            timeSpan.Seconds);
+        countDown = maxTime;
+        isRunning = true;
+        isPaused = false;
+        lastWholeSecond = Mathf.FloorToInt(countDown);
+        UpdateTimerText();
     }
 }

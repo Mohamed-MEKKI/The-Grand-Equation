@@ -15,6 +15,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "General",
             possibleActions = "Stop the assassin",
             description = "Protects against assassination.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/general"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Block Assassination", type = AbilityType.BlockAssassination, value = 1, target = "Assassin" }
@@ -28,6 +30,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "National Guard",
             possibleActions = "Predict the role",
             description = "Guess another player's role.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/national_guard"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Predict Role", type = AbilityType.PredictRole, value = 1, target = "Player" }
@@ -41,6 +45,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "Deputy",
             possibleActions = "Sees player's other card",
             description = "Look at one of another player's cards.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/deputy"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Peek Card", type = AbilityType.PeekOtherCard, value = 1, target = "Player" }
@@ -54,6 +60,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "Thief",
             possibleActions = "Steal from the player",
             description = "Take coins from another player.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/robber"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Steal 2 Coins", type = AbilityType.StealCoins, value = 2, target = "Player" }
@@ -67,6 +75,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "Fiscality",
             possibleActions = "Tax the players",
             description = "Collect taxes from all players.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/fiscality"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Tax All (+2 Coins)", type = AbilityType.TaxAllPlayers, value = 2, target = "All" }
@@ -80,6 +90,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "Boss",
             possibleActions = "Shuffle the cards",
             description = "Rearrange cards in play.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/boss"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Shuffle Deck", type = AbilityType.ShuffleRoles, value = 0, target = "Deck" }
@@ -93,6 +105,8 @@ public class CardDatabase : MonoBehaviour
             cardName = "Assassin",
             possibleActions = "Boss take money from the bank",
             description = "Kill a role unless blocked.",
+            canBeChallenged = true,
+            artwork = Resources.Load<Sprite>("Resources/assassin"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Assassinate (Cost: 3 Coins)", type = AbilityType.Assassinate, value = 3, target = "Player" }

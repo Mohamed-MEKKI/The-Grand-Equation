@@ -45,7 +45,12 @@ public class TurnTimer : MonoBehaviour
         {
             remainingTime = 0f;
             isRunning = false;
-            GameManager.Instance.EndPlayerTurn();
+            
+            // End player turn if GameManager exists
+            if (GameManager.Instance != null)
+            {
+                GameManager.Instance.EndPlayerTurn();
+            }
         }
     }
 

@@ -34,7 +34,16 @@ public class EndTurnButtonDesign : MonoBehaviour
     }
     private void Awake()
     {
-        var btn = GetComponent<Button>();
+        // Try to get button from public field first, then from component
+        Button btn = endTurnButton != null ? endTurnButton : 
+                    (button != null ? button : GetComponent<Button>());
+        
+        if (btn == null)
+        {
+            Debug.LogError("EndTurnButtonDesign: No Button component found! Make sure this script is on a GameObject with a Button component, or assign 'endTurnButton' or 'button' in the Inspector.");
+            return;
+        }
+
         btn.onClick.RemoveAllListeners();
         btn.onClick.AddListener(() =>
         {
@@ -51,7 +60,15 @@ public class EndTurnButtonDesign : MonoBehaviour
                 GameManager.Instance.EndPlayerTurn();
                 Debug.Log("player turn ended");
             }
+            else
+            {
+                Debug.LogWarning("GameManager.Instance is null! Cannot end player turn.");
+            }
         });
+
+        // Store reference for later use
+        if (endTurnButton == null)
+            endTurnButton = btn;
     }
 
     void SetupButtonDesign()

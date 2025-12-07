@@ -30,18 +30,20 @@ public class CardDefiner
     public string possibleActions;
     [Header("Abilities")]
     public RoleAbility[] abilities = new RoleAbility[1];  // 1 main ability per role
+    internal bool canBeChallenged;
 
     public CardDefiner()
     {
 
     }
-    public CardDefiner(int id ,string cardName, string description, Sprite artwork, string possibleActions)
+    public CardDefiner(int id ,string cardName, string description, Sprite artwork, string possibleActions, bool canBeChallenged)
     {
         this.cardId = id;
         this.cardName = cardName;
         this.description = description;
         this.artwork = artwork;
         this.possibleActions = possibleActions;
+        this.canBeChallenged = canBeChallenged;
 
     }
 
