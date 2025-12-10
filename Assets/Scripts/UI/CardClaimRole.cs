@@ -1,4 +1,4 @@
-using UnityEngine;
+﻿using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class CardClaimHandler : MonoBehaviour, IPointerClickHandler
@@ -9,7 +9,7 @@ public class CardClaimHandler : MonoBehaviour, IPointerClickHandler
 
         var display = GetComponent<CardDisplay>();
         if (display?.card == null) return;
+        Debug.Log($"Player claims: {display.card.cardName} → {display.card.possibleActions}");
 
-        GameManager.Instance.ClaimRole(display.card);
     }
 }

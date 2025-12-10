@@ -167,7 +167,7 @@ public class HandManager : MonoBehaviour
             {
                 if (ability != null)
                 {
-                    RoleAbilityManager.Instance.ExecuteAbility(ability);
+                    RoleAbilityManager.Instance.ExecuteAbility(ability, false); // Opponent plays card
                 }
             }
         }

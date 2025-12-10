@@ -23,6 +23,11 @@ public class PauseManager : MonoBehaviour
         if (isPaused) ResumeGame();
         else PauseGame();
     }
+    public void OpenSettingsButton()
+    {
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("PersistentUISettings");
+    }
 
     public void PauseGame()
     {

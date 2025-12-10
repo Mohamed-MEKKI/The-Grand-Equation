@@ -16,9 +16,10 @@ public enum AbilityType
     PeekOtherCard,          // Deputy
     StealCoins,             // Thief
     TaxAllPlayers,          // Fiscalité
-    ShuffleRoles,           // Boss
+    SwapCards,           // Boss
     Assassinate,             // Assassin
-    EliminateCard
+    EliminateCard,
+    GetCoins    //Boss
 }
 [System.Serializable]
 public class CardDefiner

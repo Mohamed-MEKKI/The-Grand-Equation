@@ -9,9 +9,8 @@ public class MatchScoreboard : MonoBehaviour
     public static PauseManager PauseInstance { get; private set; }
 
     [Header("UI References - MUST ASSIGN IN INSPECTOR")]
-    public TMP_Text agentNameText;
     public TMP_Text creditsText;
-
+    public TMP_Text victories;
     [Header("CONFIGURE IN INSPECTOR")]
     public bool isPlayerScoreboard = true; // true = Player, false = Opponent
 
@@ -31,7 +30,7 @@ public class MatchScoreboard : MonoBehaviour
     private void Start()
     {
         // Safety check + update
-        if (agentNameText == null || creditsText == null)
+        if ( creditsText == null)
         {
             Debug.LogError($"[MatchScoreboard] Missing UI references on {gameObject.name}!", this);
             return;
@@ -42,8 +41,6 @@ public class MatchScoreboard : MonoBehaviour
 
     public void UpdateScoreboard()
     {
-        if (agentNameText != null)
-            agentNameText.text = agentName;
 
         if (creditsText != null)
             creditsText.text = credits.ToString("N0");   // ← this line stays exactly the same

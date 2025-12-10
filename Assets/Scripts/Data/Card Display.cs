@@ -40,13 +40,30 @@ public class CardDisplay : MonoBehaviour
 
     public void SetFaceUp(bool faceUp)
     {
-        // If you use one Image for front + back
-        if (artworkImage != null && cardBack != null)
+        // Set face up/down state
+        if (artworkImage != null)
         {
             artworkImage.gameObject.SetActive(faceUp);
-            cardBack.gameObject.SetActive(!faceUp);
+        }
+        else
+        {
+            Debug.LogWarning($"CardDisplay.SetFaceUp: artworkImage is null on card '{gameObject.name}'");
         }
         
+        if (cardBack != null)
+        {
+            cardBack.SetActive(!faceUp);
+        }
+        else
+        {
+            Debug.LogWarning($"CardDisplay.SetFaceUp: cardBack is null on card '{gameObject.name}'");
+        }
+        
+        // Also handle nameText visibility if it should be hidden when face down
+        if (nameText != null)
+        {
+            nameText.gameObject.SetActive(faceUp);
+        }
     }
 
     Sprite GetAbilityIcon(AbilityType type)
@@ -58,7 +75,7 @@ public class CardDisplay : MonoBehaviour
             AbilityType.PeekOtherCard => Resources.Load<Sprite>("Icons/Eye"),
             AbilityType.StealCoins => Resources.Load<Sprite>("Icons/CoinSteal"),
             AbilityType.TaxAllPlayers => Resources.Load<Sprite>("Icons/Tax"),
-            AbilityType.ShuffleRoles => Resources.Load<Sprite>("Icons/Shuffle"),
+            AbilityType.SwapCards => Resources.Load<Sprite>("Icons/Shuffle"),
             AbilityType.Assassinate => Resources.Load<Sprite>("Icons/Dagger"),
             _ => null
         };

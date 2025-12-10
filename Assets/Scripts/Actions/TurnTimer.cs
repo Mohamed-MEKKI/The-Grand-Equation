@@ -4,61 +4,99 @@ using TMPro;
 
 public class TurnTimer : MonoBehaviour
 {
-    public static TurnTimer Instance { get; private set; }   // ← MUST BE public static
+    public static TurnTimer Instance { get; private set; }
 
     [Header("UI")]
     public TextMeshProUGUI timerText;
     public Image timerFill;
 
+    [Header("Settings")]
     public float turnTime = 60f;
+
     private float remainingTime;
     private bool isRunning = false;
 
     private void Awake()
     {
-        // THIS IS THE CRITICAL PART
         if (Instance != null && Instance != this)
         {
             Destroy(gameObject);
             return;
         }
-        Instance = this;                    // ← THIS LINE WAS MISSING OR WRONG
-        DontDestroyOnLoad(gameObject);      // Optional: survive scene reloads
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
     }
 
-    public void StartTimer()
+    // Use this when starting a NEW turn
+    public void StartNewTurn()
     {
         remainingTime = turnTime;
         isRunning = true;
         UpdateVisuals();
+        Debug.Log($"Turn started: {turnTime}s");
     }
 
-    public void StopTimer() => isRunning = false;
+    public void StopTimer()
+    {
+        isRunning = false;
+        UpdateVisuals();
+    }
+
+    // Use this when you want to fully reset without starting
+    public void ResetTimer()
+    {
+        remainingTime = turnTime;
+        isRunning = false;
+        UpdateVisuals();
+        Debug.Log("Timer fully reset (stopped)");
+    }
+
+    // Optional: Pause/resume
+    public void PauseTimer() => isRunning = false;
+    public void ResumeTimer() => isRunning = true;
+
+    public bool IsRunning => isRunning;
+    public float RemainingTime => remainingTime;
 
     private void Update()
     {
         if (!isRunning) return;
+
         remainingTime -= Time.deltaTime;
-        UpdateVisuals();
 
         if (remainingTime <= 0f)
         {
             remainingTime = 0f;
             isRunning = false;
-            
-            // End player turn if GameManager exists
-            if (GameManager.Instance != null)
-            {
-                GameManager.Instance.EndPlayerTurn();
-            }
+            UpdateVisuals();
+
+            Debug.Log("Time's up!");
+            GameManager.Instance?.EndPlayerTurn();
+        }
+        else
+        {
+            UpdateVisuals();
         }
     }
 
     void UpdateVisuals()
     {
-        int secs = Mathf.FloorToInt(remainingTime);
-        if (timerText) timerText.text = secs.ToString();
-        if (timerFill) timerFill.fillAmount = remainingTime / turnTime;
-        if (timerText) timerText.color = remainingTime < 10f ? Color.red : Color.white;
+        if (timerText != null)
+        {
+            int secs = Mathf.FloorToInt(remainingTime);
+            timerText.text = secs.ToString("00"); // nicer: 09, 08...
+            timerText.color = remainingTime < 10f ? Color.red : Color.white;
+        }
+
+        if (timerFill != null)
+        {
+            timerFill.fillAmount = Mathf.Clamp01(remainingTime / turnTime);
+        }
+    }
+
+    // Optional: visual debug in editor
+    private void OnValidate()
+    {
+        if (turnTime <= 0) turnTime = 60f;
     }
 }

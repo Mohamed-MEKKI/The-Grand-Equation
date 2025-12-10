@@ -13,13 +13,14 @@ public class CardDatabase : MonoBehaviour
         {
             cardId = 1,
             cardName = "General",
-            possibleActions = "Stop the assassin",
-            description = "Protects against assassination.",
+            possibleActions = "Predict another player role and Stop the assassin",
+            description = "Pays 4 coins to guess other player role and Protects against assassination.",
             canBeChallenged = true,
             artwork = Resources.Load<Sprite>("Resources/general"),
             abilities = new RoleAbility[]
             {
-                new RoleAbility { abilityName = "Block Assassination", type = AbilityType.BlockAssassination, value = 1, target = "Assassin" }
+                //new RoleAbility { abilityName = "Block Assassination", type = AbilityType.BlockAssassination, value = 1, target = "Assassin" },
+                new RoleAbility { abilityName = "Predict Role", type = AbilityType.PredictRole, value = 1, target = "Player" }
             }
         },
         
@@ -28,13 +29,13 @@ public class CardDatabase : MonoBehaviour
         {
             cardId = 2,
             cardName = "National Guard",
-            possibleActions = "Predict the role",
-            description = "Guess another player's role.",
+            possibleActions = "Peeks other players card",
+            description = "He is able to see one player's random card",
             canBeChallenged = true,
             artwork = Resources.Load<Sprite>("Resources/national_guard"),
             abilities = new RoleAbility[]
             {
-                new RoleAbility { abilityName = "Predict Role", type = AbilityType.PredictRole, value = 1, target = "Player" }
+                new RoleAbility { abilityName = "Peek Card", type = AbilityType.PeekOtherCard, value = 1, target = "Player" }
             }
         },
         
@@ -43,13 +44,13 @@ public class CardDatabase : MonoBehaviour
         {
             cardId = 3,
             cardName = "Deputy",
-            possibleActions = "Sees player's other card",
-            description = "Look at one of another player's cards.",
+            possibleActions = "Swap his own cards",
+            description = "He is able to change one or more cards.",
             canBeChallenged = true,
             artwork = Resources.Load<Sprite>("Resources/deputy"),
             abilities = new RoleAbility[]
             {
-                new RoleAbility { abilityName = "Peek Card", type = AbilityType.PeekOtherCard, value = 1, target = "Player" }
+                new RoleAbility { abilityName = "Swap Cards", type = AbilityType.SwapCards, value = 1, target = "Player" }
             }
         },
         
@@ -64,7 +65,8 @@ public class CardDatabase : MonoBehaviour
             artwork = Resources.Load<Sprite>("Resources/robber"),
             abilities = new RoleAbility[]
             {
-                new RoleAbility { abilityName = "Steal 2 Coins", type = AbilityType.StealCoins, value = 2, target = "Player" }
+                new RoleAbility { abilityName = "Steal 2 Coins", type = AbilityType.StealCoins, value = 2, target = "Player" },
+                //new RoleAbility { abilityName = "Bloc other Robberies", type = AbilityType.BlocRobbery, value = 2, target = "Player" }
             }
         },
         
@@ -79,22 +81,23 @@ public class CardDatabase : MonoBehaviour
             artwork = Resources.Load<Sprite>("Resources/fiscality"),
             abilities = new RoleAbility[]
             {
-                new RoleAbility { abilityName = "Tax All (+2 Coins)", type = AbilityType.TaxAllPlayers, value = 2, target = "All" }
+                new RoleAbility { abilityName = "Tax All (+2 Coins)", type = AbilityType.TaxAllPlayers, value = 2, target = "All" },
+                //new RoleAbility { abilityName = "Stops Governmental aids", type = AbilityType.StopGovAid, value = 2, target = "All" }
             }
         },
         
-        // ID 6: Boss (Ambassador - shuffle/rearrange)
+        // ID 6: Boss (Ambassador - gets coins from banks)
         new CardDefiner
         {
             cardId = 6,
             cardName = "Boss",
-            possibleActions = "Shuffle the cards",
-            description = "Rearrange cards in play.",
+            possibleActions =  "take money from the bank",
+            description = "Takes 4 coins from the bank.",
             canBeChallenged = true,
             artwork = Resources.Load<Sprite>("Resources/boss"),
             abilities = new RoleAbility[]
             {
-                new RoleAbility { abilityName = "Shuffle Deck", type = AbilityType.ShuffleRoles, value = 0, target = "Deck" }
+                new RoleAbility { abilityName = "Gets 4 coins from the bank", type = AbilityType.GetCoins, value = 0, target = "Deck" }
             }
         },
         
@@ -103,7 +106,7 @@ public class CardDatabase : MonoBehaviour
         {
             cardId = 7,
             cardName = "Assassin",
-            possibleActions = "Boss take money from the bank",
+            possibleActions = "Eliminate other player's role",
             description = "Kill a role unless blocked.",
             canBeChallenged = true,
             artwork = Resources.Load<Sprite>("Resources/assassin"),

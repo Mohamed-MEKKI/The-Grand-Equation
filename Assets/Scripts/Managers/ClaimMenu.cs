@@ -7,7 +7,7 @@ public class ClaimMenu : MonoBehaviour
 
     [Header("UI")]
     public GameObject claimMenuPanel;
-    public Button claimMenuButton;  // Drag your pause button here
+    public Button claimMenuButton;  // Drag your claim menu button here
 
     public bool isclicked = false;
     private void Awake()
@@ -35,7 +35,7 @@ public class ClaimMenu : MonoBehaviour
 
 
     // CONNECT THESE TO YOUR BUTTONS IN INSPECTOR!
-    public void ClaimDuke() => Claim("Duke");
+    public void ClaimDuke() => Claim("National Guard");
     public void ClaimThief() => Claim("Thief");
     public void ClaimAssassin() => Claim("Assassin");
     public void ClaimFiscality() => Claim("Fiscality");
@@ -45,6 +45,8 @@ public class ClaimMenu : MonoBehaviour
 
     private void Claim(string roleName)
     {
+        
         GameManager.Instance.ClaimRoleByName(roleName);
+        HideClaimMenu(); // Hide menu after claiming
     }
 }

@@ -49,12 +49,7 @@ public class EndTurnButtonDesign : MonoBehaviour
         {
 
             // 100% SAFE � check everything exists
-            if (TurnTimer.Instance != null)
-            {
-                TurnTimer.Instance.StopTimer();
-                Debug.Log("time stopped");
-            }
-
+            // Timer reset and turn switching is handled by GameManager.EndTurn()
             if (GameManager.Instance != null)
             {
                 GameManager.Instance.EndPlayerTurn();
@@ -155,7 +150,7 @@ public class EndTurnButtonDesign : MonoBehaviour
         // ===== TEXTE - Styl� avec double outline =====
         if (buttonText != null)
         {
-            buttonText.text = "FIN DU TOUR";
+            buttonText.text = "END TURN";
             buttonText.color = Color.white;
             buttonText.fontSize = 28;
             buttonText.fontStyle = FontStyles.Bold | FontStyles.UpperCase;

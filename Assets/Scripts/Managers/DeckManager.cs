@@ -72,8 +72,21 @@ public class DeckManager : MonoBehaviour
             : HandManager.Instance.opponentHandTransform;
 
         GameObject cardObj = Instantiate(CardToHand, parent);
-        cardObj.GetComponent<CardDisplay>().Setup(cardDef);
-        cardObj.GetComponent<CardDisplay>().SetFaceUp(isPlayer);
+        CardDisplay display = cardObj.GetComponent<CardDisplay>();
+        
+        if (display == null)
+        {
+            Debug.LogError("CardToHand prefab missing CardDisplay component!");
+            Destroy(cardObj);
+            return;
+        }
+        
+        // Setup the card data first
+        display.Setup(cardDef);
+        
+        // IMPORTANT: Set face state AFTER setup
+        // Player cards: face UP (true), Opponent cards: face DOWN (false)
+        display.SetFaceUp(isPlayer);
 
         HandManager.Instance.AddCardToHand(cardObj, isPlayer);
 

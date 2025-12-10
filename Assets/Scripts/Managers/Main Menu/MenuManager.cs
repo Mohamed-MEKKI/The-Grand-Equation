@@ -23,28 +23,11 @@ public class MenuManager : MonoBehaviour
     {
         SceneManager.LoadScene("GameScene"); // Your game scene
     }
-    /*
     public void OpenSettings()
     {
-        settingsPanel.SetActive(true);
+        Time.timeScale = 1f;
+        SceneManager.LoadScene("PersistentUISettings");
     }
-
-    public void CloseSettings()
-    {
-        settingsPanel.SetActive(false);
-    }
-
-    public void SetVolume(float volume)
-    {
-        audioMixer.SetFloat("Volume", Mathf.Log10(volume) * 20);
-        PlayerPrefs.SetFloat("Volume", volume);
-    }
-
-    public void SetFullscreen(bool isFullscreen)
-    {
-        Screen.fullScreen = isFullscreen;
-        PlayerPrefs.SetInt("Fullscreen", isFullscreen ? 1 : 0);
-    }*/
 
     public void QuitGame()
     {
