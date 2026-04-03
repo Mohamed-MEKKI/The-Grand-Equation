@@ -37,6 +37,20 @@ public class GameOverAnimation : MonoBehaviour
     private Tween glowTween;
     #endregion
 
+    #region Initialization
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else
+        {
+            Destroy(gameObject);
+        }
+    }
+    #endregion
+
     #region Public Methods
     /// <summary>
     /// Shows the victory screen animation with advanced DOTween features.

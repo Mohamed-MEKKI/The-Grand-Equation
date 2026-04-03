@@ -1,4 +1,4 @@
-﻿using System.Collections.Generic;
+using System.Collections.Generic;
 using UnityEngine;
 
 public class CardDatabase : MonoBehaviour
@@ -16,7 +16,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions = "Predict another player role and Stop the assassin",
             description = "Pays 4 coins to guess other player role and Protects against assassination.",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/general"),
+            artwork = Resources.Load<Sprite>("general"),
             abilities = new RoleAbility[]
             {
                 //new RoleAbility { abilityName = "Block Assassination", type = AbilityType.BlockAssassination, value = 1, target = "Assassin" },
@@ -32,7 +32,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions = "Peeks other players card",
             description = "He is able to see one player's random card",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/national_guard"),
+            artwork = Resources.Load<Sprite>("national_guard"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Peek Card", type = AbilityType.PeekOtherCard, value = 1, target = "Player" }
@@ -47,7 +47,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions = "Swap his own cards",
             description = "He is able to change one or more cards.",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/deputy"),
+            artwork = Resources.Load<Sprite>("deputy"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Swap Cards", type = AbilityType.SwapCards, value = 1, target = "Player" }
@@ -62,7 +62,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions = "Steal from the player",
             description = "Take coins from another player.",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/robber"),
+            artwork = Resources.Load<Sprite>("robber"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Steal 2 Coins", type = AbilityType.StealCoins, value = 2, target = "Player" },
@@ -78,7 +78,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions = "Tax the players",
             description = "Collect taxes from all players.",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/fiscality"),
+            artwork = Resources.Load<Sprite>("fiscality"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Tax All (+2 Coins)", type = AbilityType.TaxAllPlayers, value = 2, target = "All" },
@@ -94,7 +94,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions =  "take money from the bank",
             description = "Takes 4 coins from the bank.",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/boss"),
+            artwork = Resources.Load<Sprite>("Boss"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Gets 4 coins from the bank", type = AbilityType.GetCoins, value = 0, target = "Deck" }
@@ -109,7 +109,7 @@ public class CardDatabase : MonoBehaviour
             possibleActions = "Eliminate other player's role",
             description = "Kill a role unless blocked.",
             canBeChallenged = true,
-            artwork = Resources.Load<Sprite>("Resources/assassin"),
+            artwork = Resources.Load<Sprite>("assassin"),
             abilities = new RoleAbility[]
             {
                 new RoleAbility { abilityName = "Assassinate (Cost: 3 Coins)", type = AbilityType.Assassinate, value = 3, target = "Player" }

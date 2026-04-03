@@ -1,4 +1,4 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 
 public class MatchScoreboard : MonoBehaviour
@@ -53,6 +53,12 @@ public class MatchScoreboard : MonoBehaviour
     public void AddCredits(int amount)
     {
         credits += amount;
+        UpdateScoreboard();
+    }
+
+    public void SetCredits(int amount)
+    {
+        credits = amount;
         UpdateScoreboard();
     }
 

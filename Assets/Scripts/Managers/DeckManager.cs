@@ -102,7 +102,6 @@ public class DeckManager : MonoBehaviour
 
     public IEnumerator DealHandsCoroutine()
     {
-        HandManager.Instance.ClearHands();
 
         // Deal to player
         for (int i = 0; i < startingHandSize; i++)

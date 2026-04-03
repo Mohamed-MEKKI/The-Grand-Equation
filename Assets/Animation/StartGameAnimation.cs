@@ -130,6 +130,7 @@ public class StartGameAnimation : MonoBehaviour
         mainSequence = DOTween.Sequence();
         mainSequence.SetAutoKill(false);
         mainSequence.SetRecyclable(true);
+        mainSequence.SetUpdate(true);
 
         // Step 1: Initial wait
         mainSequence.AppendInterval(initialWaitDuration);

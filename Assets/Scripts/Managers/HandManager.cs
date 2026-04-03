@@ -155,25 +155,31 @@ public class HandManager : MonoBehaviour
 
         // Store card info before removing (card gets destroyed in RemoveCardFromHand)
         string cardName = display.card.cardName;
-        RoleAbility[] abilities = display.card.abilities;
 
-        // Reveal opponent's role
-        display.SetFaceUp(true);
+        // Keep opponent card hidden when played.
+        display.SetFaceUp(false);
 
-        // Trigger opponent's abilities BEFORE removing card (prevents issues if card is destroyed)
-        if (abilities != null && RoleAbilityManager.Instance != null)
+        GameEventLog.AppendGlobal($"Opponent plays: {cardName}.");
+
+        // Give the player a chance to challenge this claimed role before resolving.
+        if (GameManager.Instance != null)
         {
-            foreach (var ability in abilities)
+            GameManager.Instance.BeginOpponentClaim(display.card, playedCard);
+        }
+        else
+        {
+            // Fallback: old immediate resolution
+            var abilities = display.card.abilities;
+            if (abilities != null && RoleAbilityManager.Instance != null)
             {
-                if (ability != null)
+                foreach (var ability in abilities)
                 {
-                    RoleAbilityManager.Instance.ExecuteAbility(ability, false); // Opponent plays card
+                    if (ability != null)
+                        RoleAbilityManager.Instance.ExecuteAbility(ability, false);
                 }
             }
+            //RemoveCardFromHand(playedCard, false);
         }
-
-        // Remove from hand AFTER triggering abilities
-        RemoveCardFromHand(playedCard, false); // false = opponent hand
 
         Debug.Log($"Opponent played: {cardName}");
     }

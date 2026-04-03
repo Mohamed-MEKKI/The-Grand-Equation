@@ -1,6 +1,7 @@
 ﻿using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.InputSystem;
 using UnityEngine.SceneManagement;
+using UnityEngine.UI;
 
 public class PauseManager : MonoBehaviour
 {
@@ -11,6 +12,14 @@ public class PauseManager : MonoBehaviour
     public Button pauseButton;  // Drag your pause button here
 
     public bool isPaused = false;
+
+    void Update()
+    {
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            pausePanel.SetActive(false);
+        }
+    }
 
     void Awake()
     {
@@ -25,8 +34,6 @@ public class PauseManager : MonoBehaviour
     }
     public void OpenSettingsButton()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene("PersistentUISettings");
     }
 
     public void PauseGame()

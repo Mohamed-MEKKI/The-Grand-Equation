@@ -1,5 +1,6 @@
-﻿using System.Collections;
+using System.Collections;
 using TMPro;
+using Unity.AppUI.UI;
 using UnityEngine;
 
 public class GameManager : MonoBehaviour
@@ -13,11 +14,23 @@ public class GameManager : MonoBehaviour
     public bool isPlayerTurn = true;
     public int currentRound = 1;
 
+    [Header("Match State")]
+    public int playerRoundWins = 0;
+    public int opponentRoundWins = 0;
+    [Range(3, 5)]
+    public int roundsToWin = 3;
+    private bool isResettingRound = false;
+
     [Header("UI")]
     public TextMeshProUGUI roundText;
     public TextMeshProUGUI turnText;
+    public TextMeshProUGUI playerScoreText;
+    public TextMeshProUGUI opponentScoreText;
+
 
     private CardDefiner lastClaimedRole;
+    private GameObject pendingOpponentPlayedCard;
+    private Coroutine opponentChallengeWindowRoutine;
     #endregion
 
     #region Initialization
@@ -31,17 +44,26 @@ public class GameManager : MonoBehaviour
         {
             Destroy(gameObject);
         }
+
+        roundsToWin = Mathf.Clamp(roundsToWin, 3, 5);
+    }
+
+    private void OnValidate()
+    {
+        roundsToWin = Mathf.Clamp(roundsToWin, 3, 5);
     }
 
     private IEnumerator Start()
     {
         if (DeckManager.Instance == null)
         {
+
             Debug.LogError("DeckManager.Instance is null. Cannot deal hands or start game loop.");
             yield break;
         }
 
         yield return StartCoroutine(DeckManager.Instance.DealHandsCoroutine());
+        UpdateScoreUI();
         StartCoroutine(GameLoop());
     }
     #endregion
@@ -51,17 +73,13 @@ public class GameManager : MonoBehaviour
     {
         while (true)
         {
+            CheckRoundEnd();
+            yield return new WaitForSecondsRealtime(5f);
             yield return StartCoroutine(PlayerTurn());
-            if (CheckWinCondition()) yield break;
-
+            yield return new WaitForSecondsRealtime(5f);
+            CheckRoundEnd();
+            yield return new WaitForSecondsRealtime(5f);
             yield return StartCoroutine(OpponentTurn());
-            if (CheckWinCondition()) yield break;
-
-            currentRound++;
-            if (roundText != null)
-            {
-                roundText.text = $"Round {currentRound}";
-            }
         }
     }
 
@@ -70,36 +88,39 @@ public class GameManager : MonoBehaviour
         isPlayerTurn = true;
         UpdateTurnUI();
 
-        if (TurnTimer.Instance != null)
-        {
-            TurnTimer.Instance.StartNewTurn();
-        }
+        StartPlayerTurnTimers();
 
-        // Wait until player ends their turn
         while (isPlayerTurn)
         {
             yield return null;
         }
 
-        if (TurnTimer.Instance != null)
-        {
-            // Ensure the timer UI/value is restored when the turn ends
-            TurnTimer.Instance.ResetTimer();
-            TurnTimer.Instance.StopTimer();
-        }
+        // Timer is reset in EndTurn() when the player’s turn actually ends.
     }
 
     private IEnumerator OpponentTurn()
     {
         isPlayerTurn = false;
+        ClaimMenu.Instance?.DisableClaimButton();
+
         UpdateTurnUI();
 
+        yield return new WaitForSecondsRealtime(5f);
+
         if (HandManager.Instance != null)
-        {
             HandManager.Instance.OpponentPlayRandomCard();
+
+        // Wait until the opponent play is fully resolved (challenge window or challenge click).
+        // This prevents the turn from "moving on" while the card still looks unplayed.
+        float timeout = 10f;
+        while (pendingOpponentPlayedCard != null && timeout > 0f)
+        {
+            timeout -= Time.unscaledDeltaTime;
+            yield return null;
         }
 
-        yield return new WaitForSecondsRealtime(1.5f);
+        // Leave the turn timer in a fresh stopped state until the next player turn starts.
+        StopPlayerTurnTimers();
     }
 
     public void StartPlayerTurn()
@@ -108,16 +129,8 @@ public class GameManager : MonoBehaviour
         Debug.Log("YOUR TURN");
         UpdateTurnUI();
 
-        if (TurnTimer.Instance != null)
-        {
-            TurnTimer.Instance.StartNewTurn();
-        }
-        else
-        {
-            Debug.LogWarning("TurnTimer.Instance is null! Timer will not work.");
-        }
+        StartPlayerTurnTimers();
     }
-
 
     public void EndTurn()
     {
@@ -125,111 +138,185 @@ public class GameManager : MonoBehaviour
 
         isPlayerTurn = false;
         UpdateTurnUI();
-
-        // DO NOT TOUCH THE TIMER HERE!
-        // Just stop it if it's still running (safety)
-        TurnTimer.Instance?.StopTimer();
+        // Full reset (duration + visuals) when the turn ends, not only pause at last value.
+        StopPlayerTurnTimers();
     }
 
-    public void EndPlayerTurn() // Called by timer when time == 0
+    public void EndPlayerTurn()
     {
         if (PauseManager.Instance != null && PauseManager.Instance.isPaused) return;
-
-        // Only end the turn — do NOT reset timer here!
         EndTurn();
-
-        // Optional: play "time's up" sound, flash screen, etc.
         Debug.Log("Player ran out of time!");
-    }    
+        GameEventLog.AppendGlobal("Turn timed out: Player ended turn.");
+    }
 
     private void UpdateTurnUI()
     {
         if (turnText != null)
-        {
             turnText.text = isPlayerTurn ? "Your Turn" : "Opponent's Turn";
+
+        if (ClaimMenu.Instance != null)
+            ClaimMenu.Instance.SetClaimButtonVisible(isPlayerTurn);
+    }
+
+    private void StartPlayerTurnTimers()
+    {
+        if (TurnTimer.Instance != null)
+        {
+            TurnTimer.Instance.ResetTimer();
+            TurnTimer.Instance.StartNewTurn();
         }
+
+        if (GameTimer.Instance != null)
+            GameTimer.Instance.BeginPlayerTurn();
+        else if (TurnTimer.Instance == null)
+            Debug.LogWarning("GameManager: No TurnTimer or GameTimer in scene; turn countdown will not run.");
+    }
+
+    private void StopPlayerTurnTimers()
+    {
+        TurnTimer.Instance?.ResetTimer();
+        GameTimer.Instance?.StopBetweenTurns();
     }
     #endregion
 
-    #region Win Condition
-    private bool CheckWinCondition()
+    #region Round Condition
+    /// <summary>
+    /// Replaces CheckWinCondition. Awards a round win and either
+    /// starts the next round or ends the match.
+    /// </summary>
+    private bool CheckRoundEnd()
     {
+        if (isResettingRound) return false;
+
         if (HandManager.Instance == null)
         {
-            Debug.LogWarning("HandManager.Instance is null! Cannot check win condition.");
+            Debug.LogWarning("HandManager.Instance is null! Cannot check round end.");
             return false;
         }
 
-        if (HandManager.Instance.playerHandCards.Count == 0)
+        bool playerLost = HandManager.Instance.playerHandCards.Count == 0;
+        bool opponentLost = HandManager.Instance.opponentHandCards.Count == 0;
+
+        if (!playerLost && !opponentLost) return false;
+
+        if (opponentLost)
         {
-            ShowWinScreen("OPPONENT WINS!\nYou have no cards left.");
+            playerRoundWins++;
+            Debug.Log($"Player wins the round! ({playerRoundWins}/{roundsToWin})");
+            GameEventLog.AppendGlobal($"Round win: Player ({playerRoundWins}/{roundsToWin}).");
+        }
+        else
+        {
+            opponentRoundWins++;
+            Debug.Log($"Opponent wins the round! ({opponentRoundWins}/{roundsToWin})");
+            GameEventLog.AppendGlobal($"Round win: Opponent ({opponentRoundWins}/{roundsToWin}).");
+        }
+
+        UpdateScoreUI();
+
+        // Check match winner
+        if (playerRoundWins >= roundsToWin)
+        {
+            GameEventLog.AppendGlobal("Match end: Player wins.");
+            GameOver(true);
             return true;
         }
-        else if (HandManager.Instance.opponentHandCards.Count == 0)
+
+        if (opponentRoundWins >= roundsToWin)
         {
-            ShowWinScreen("YOU WIN!\nOpponent has no cards left!");
+            GameEventLog.AppendGlobal("Match end: Opponent wins.");
+            GameOver(false);
             return true;
         }
 
-        return false;
+        // Nobody has won the match yet — reset for next round
+        GameEventLog.AppendGlobal("Next round starting...");
+        StartCoroutine(StartNextRound());
+        return true;
     }
 
-    private void ShowWinScreen(string message)
+    /// <summary>
+    /// Called from ResolveChallenge — same logic, just not inside the GameLoop.
+    /// </summary>
+    private void CheckRoundEndFromChallenge()
     {
-        Debug.Log("🎉 GAME OVER: " + message);
-        
-        // Determine if player won
-        bool playerWon = HandManager.Instance != null && HandManager.Instance.opponentHandCards.Count == 0;
-        
-        // Call GameOver animation
-        GameOver(playerWon);
-    }
-    #endregion
+        if (isResettingRound) return;
 
-    #region Card Playing
-    public void PlayCard(CardDefiner cardDef, GameObject cardObj)
-    {
-        if (cardDef == null || cardObj == null)
+        if (HandManager.Instance == null) return;
+
+        bool playerLost = HandManager.Instance.playerHandCards.Count == 0;
+        bool opponentLost = HandManager.Instance.opponentHandCards.Count == 0;
+
+        if (!playerLost && !opponentLost) return;
+
+        if (opponentLost)
         {
-            Debug.LogError("PlayCard: cardDef or cardObj is null!");
+            playerRoundWins++;
+            Debug.Log($"Player wins the round! ({playerRoundWins}/{roundsToWin})");
+            GameEventLog.AppendGlobal($"Round win: Player ({playerRoundWins}/{roundsToWin}).");
+        }
+        else
+        {
+            opponentRoundWins++;
+            Debug.Log($"Opponent wins the round! ({opponentRoundWins}/{roundsToWin})");
+            GameEventLog.AppendGlobal($"Round win: Opponent ({opponentRoundWins}/{roundsToWin}).");
+        }
+
+        UpdateScoreUI();
+
+        if (playerRoundWins >= roundsToWin)
+        {
+            GameEventLog.AppendGlobal("Match end: Player wins.");
+            GameOver(true);
             return;
         }
 
-        if (HandManager.Instance == null)
+        if (opponentRoundWins >= roundsToWin)
         {
-            Debug.LogError("PlayCard: HandManager.Instance is null!");
+            GameEventLog.AppendGlobal("Match end: Opponent wins.");
+            GameOver(false);
             return;
         }
 
-        // Remove from hand
-        HandManager.Instance.RemoveCardFromHand(cardObj, true);
+        GameEventLog.AppendGlobal("Next round starting...");
+        StartCoroutine(StartNextRound());
+    }
 
-        // Spawn on playfield (FACE DOWN)
-        GameObject playedCard = Instantiate(cardObj);
-        PlayedCard played = playedCard.GetComponent<PlayedCard>();
-        if (played != null)
+    private IEnumerator StartNextRound()
+    {
+        isResettingRound = true;
+        currentRound++;
+
+        if (roundText != null)
+            roundText.text = $"Round {currentRound}";
+
+        // Clear all hands
+        if (HandManager.Instance != null)
+            HandManager.Instance.ClearHands();
+
+        // Reset both players' coins at the end of every round.
+        if (RoleAbilityManager.Instance != null)
+            RoleAbilityManager.Instance.ResetCoinsForNewRound();
+
+        yield return new WaitForSeconds(1f);
+
+        // Reshuffle and redeal
+        if (DeckManager.Instance != null)
         {
-            played.Setup(cardDef);
-
-            if (RoleAbilityManager.Instance != null)
-            {
-                RoleAbilityManager.Instance.playerRoles.Add(played);
-            }
+            yield return StartCoroutine(DeckManager.Instance.DealHandsCoroutine());
         }
 
-        // Trigger abilities
-        if (cardDef.abilities != null && RoleAbilityManager.Instance != null)
-        {
-            foreach (var ability in cardDef.abilities)
-            {
-                if (ability != null)
-                {
-                    RoleAbilityManager.Instance.ExecuteAbility(ability, true); // Player plays card
-                }
-            }
-        }
+        isResettingRound = false;
+    }
 
-        Debug.Log($"✅ Played {cardDef.cardName} → {cardDef.possibleActions}");
+    private void UpdateScoreUI()
+    {
+        if (playerScoreText != null)
+            playerScoreText.text = $"{playerRoundWins}";
+
+        if (opponentScoreText != null)
+            opponentScoreText.text = $"{opponentRoundWins}";
     }
     #endregion
 
@@ -243,17 +330,27 @@ public class GameManager : MonoBehaviour
         }
 
         Debug.Log($"Player claims: {claimedRole.cardName} → {claimedRole.possibleActions}");
-
+        GameEventLog.AppendGlobal($"Player claims: {claimedRole.cardName}.");
         lastClaimedRole = claimedRole;
 
+        // Playing a real card — execute abilities immediately, no challenge possible
+        if (RoleAbilityManager.Instance != null && claimedRole.abilities != null)
+        {
+            foreach (var ability in claimedRole.abilities)
+            {
+                if (ability != null)
+                    RoleAbilityManager.Instance.ExecuteAbility(ability, true);
+            }
+        }
     }
+
 
     public void ClaimRoleByName(string roleName)
     {
-        // Validation
+        
         if (CardDatabase.cardList == null)
         {
-            Debug.LogError("ClaimRoleByName: CardDatabase.cardList is null! Make sure CardDatabase is initialized.");
+            Debug.LogError("ClaimRoleByName: CardDatabase.cardList is null!");
             return;
         }
 
@@ -263,7 +360,6 @@ public class GameManager : MonoBehaviour
             return;
         }
 
-        // Find role in database
         CardDefiner fakeRole = FindRoleInDatabase(roleName);
         if (fakeRole == null)
         {
@@ -273,19 +369,12 @@ public class GameManager : MonoBehaviour
 
         lastClaimedRole = fakeRole;
         Debug.Log($"BLUFF: You claim {roleName}");
+        GameEventLog.AppendGlobal($"Player bluffs: {roleName}.");
 
-        // Show challenge button
-        if (ChallengeButton.Instance != null)
-        {
-            ChallengeButton.Instance.ShowChallenge(roleName);
-        }
-        else
-        {
-            Debug.LogWarning("ClaimRoleByName: ChallengeButton.Instance is null!");
-        }
 
-        // Start AI challenge decision
         StartCoroutine(AIDecideChallenge());
+
+        EndTurn();
     }
 
     private CardDefiner FindRoleInDatabase(string roleName)
@@ -293,18 +382,23 @@ public class GameManager : MonoBehaviour
         foreach (var card in CardDatabase.cardList)
         {
             if (card != null && card.cardName != null && card.cardName == roleName)
-            {
                 return card;
-            }
         }
         return null;
     }
     #endregion
 
     #region Challenge System
+    private IEnumerator PlayerDecideChallenge()
+    {
+        yield return new WaitForSeconds(5);
+        Debug.Log("PLAYER CHALLENGES");
+        GameEventLog.AppendGlobal("Player challenges.");
+        OpponentChallengeIssued();
+    }
     private IEnumerator AIDecideChallenge()
     {
-        yield return new WaitForSeconds(1.5f);
+        yield return new WaitForSeconds(5);
 
         if (Random.value < 0.5f)
         {
@@ -313,78 +407,121 @@ public class GameManager : MonoBehaviour
         else
         {
             Debug.Log("Opponent lets it pass...");
-            ExecuteClaimedRoleAbilities();
+            GameEventLog.AppendGlobal("Opponent lets it pass.");
+            yield return new WaitForSeconds(5);
+            ExecuteClaimedRoleAbilities(true);
+            yield return new WaitForSeconds(5);
         }
+    }
+    public void OpponentChallengeIssued()
+    {
+        Debug.Log("Player challenges ! ");
+        GameEventLog.AppendGlobal("Player challenges opponent's claim.");
+        ResolveOpponentChallenge(true);
     }
 
     public void ChallengeIssued()
     {
         Debug.Log("OPPONENT CHALLENGES!");
+        GameEventLog.AppendGlobal("Opponent challenges.");
         ResolveChallenge(true);
     }
 
     public void ResolveChallenge(bool revealClaimed)
     {
         if (!revealClaimed || lastClaimedRole == null)
-        {
             return;
-        }
 
         bool playerHasRole = PlayerHasRoleInHand(lastClaimedRole);
         Debug.Log($"REVEAL: You {(playerHasRole ? "HAD" : "DID NOT HAVE")} {lastClaimedRole.cardName}");
+        GameEventLog.AppendGlobal($"Reveal (player): {(playerHasRole ? "had" : "did not have")} {lastClaimedRole.cardName}.");
 
         if (playerHasRole)
         {
-            // Challenge failed - player had the role
             if (TryLoseRandomCard(false))
-            {
                 Debug.Log("You had the role! Opponent loses a card.");
-            }
-            ExecuteClaimedRoleAbilities();
+            GameEventLog.AppendGlobal("Challenge result: player truthful; opponent loses a card.");
+            ExecuteClaimedRoleAbilities(true);
         }
         else
         {
-            // Challenge succeeded - player lied
             if (TryLoseRandomCard(true))
-            {
                 Debug.Log("You lied! You lose a random card.");
-            }
-            // NO abilities executed when challenge succeeds
+            GameEventLog.AppendGlobal("Challenge result: player lied; player loses a card.");
         }
 
         if (ChallengeButton.Instance != null)
-        {
             ChallengeButton.Instance.HideChallenge();
+
+        // Use challenge version — we're outside the GameLoop here
+        CheckRoundEndFromChallenge();
+    }
+    public void ResolveOpponentChallenge(bool revealClaimed)
+    {
+        if (!revealClaimed || lastClaimedRole == null)
+            return;
+
+        bool opponentHasRole = OpponentHasRoleInHand(lastClaimedRole);
+        Debug.Log($"REVEAL: You {(opponentHasRole ? "HAD" : "DID NOT HAVE")} {lastClaimedRole.cardName}");
+        GameEventLog.AppendGlobal($"Reveal (opponent): {(opponentHasRole ? "had" : "did not have")} {lastClaimedRole.cardName}.");
+
+        if (opponentHasRole)
+        {
+            if (TryLoseRandomCard(true))
+                Debug.Log("Opponent had the role! You lose a random card.");
+            GameEventLog.AppendGlobal("Challenge result: opponent truthful; player loses a card.");
+            ExecuteClaimedRoleAbilities(false);
+        }
+        else
+        {
+            if (TryLoseRandomCard(false))
+                Debug.Log("Opponent lied! Opponent loses a random card.");
+            GameEventLog.AppendGlobal("Challenge result: opponent lied; opponent loses a card.");
         }
 
-        CheckWinCondition();
+        if (ChallengeButton.Instance != null)
+            ChallengeButton.Instance.HideChallenge();
+
+        FinalizePendingOpponentPlay();
+
+        // Use challenge version — we're outside the GameLoop here
+        CheckRoundEndFromChallenge();
     }
 
     private bool PlayerHasRoleInHand(CardDefiner role)
     {
         if (role == null || HandManager.Instance == null)
-        {
             return false;
-        }
 
         foreach (var card in HandManager.Instance.playerHandCards)
         {
             if (card == null) continue;
 
             CardDisplay display = card.GetComponent<CardDisplay>();
-            if (display != null && display.card != null)
-            {
-                if (display.card.cardId == role.cardId)
-                {
-                    return true;
-                }
-            }
+            if (display != null && display.card != null && display.card.cardId == role.cardId)
+                return true;
+        }
+
+        return false;
+    }
+    private bool OpponentHasRoleInHand(CardDefiner role)
+    {
+        if (role == null || HandManager.Instance == null)
+            return false;
+
+        foreach (var card in HandManager.Instance.opponentHandCards)
+        {
+            if (card == null) continue;
+
+            CardDisplay display = card.GetComponent<CardDisplay>();
+            if (display != null && display.card != null && display.card.cardId == role.cardId)
+                return true;
         }
 
         return false;
     }
 
-    private void ExecuteClaimedRoleAbilities()
+    private void ExecuteClaimedRoleAbilities(bool isPlayerActor)
     {
         if (lastClaimedRole == null)
         {
@@ -394,32 +531,89 @@ public class GameManager : MonoBehaviour
 
         if (lastClaimedRole.abilities == null)
         {
-            Debug.LogWarning($"ExecuteClaimedRoleAbilities: Role '{lastClaimedRole.cardName}' has no abilities list!");
+            Debug.LogWarning($"ExecuteClaimedRoleAbilities: Role '{lastClaimedRole.cardName}' has no abilities!");
             return;
         }
 
         if (RoleAbilityManager.Instance == null)
         {
-            Debug.LogError("ExecuteClaimedRoleAbilities: RoleAbilityManager.Instance is null! Make sure RoleAbilityManager exists in the scene.");
+            Debug.LogError("ExecuteClaimedRoleAbilities: RoleAbilityManager.Instance is null!");
             return;
         }
 
-        Debug.Log($"Executing abilities for claimed role: {lastClaimedRole.cardName}");
         foreach (var ability in lastClaimedRole.abilities)
         {
             if (ability != null)
-            {
-                RoleAbilityManager.Instance.ExecuteAbility(ability, true); // Player's claimed role
-            }
+                RoleAbilityManager.Instance.ExecuteAbility(ability, isPlayerActor);
         }
     }
     #endregion
 
+    #region Opponent Claim Window
+    public void BeginOpponentClaim(CardDefiner claimedRole, GameObject playedCard)
+    {
+        if (claimedRole == null)
+        {
+            Debug.LogError("BeginOpponentClaim: claimedRole is null.");
+            return;
+        }
+
+        pendingOpponentPlayedCard = playedCard;
+        lastClaimedRole = claimedRole;
+        GameEventLog.AppendGlobal($"Opponent claims: {claimedRole.cardName}.");
+
+        // If there's no Challenge UI in the scene, resolve immediately (old behavior).
+        if (ChallengeButton.Instance == null)
+        {
+            GameEventLog.AppendGlobal("No challenge UI: resolving opponent claim.");
+            ExecuteClaimedRoleAbilities(false);
+            FinalizePendingOpponentPlay();
+            return;
+        }
+
+        ChallengeButton.Instance.ShowChallengeOpponent(claimedRole.cardName);
+
+        if (opponentChallengeWindowRoutine != null)
+            StopCoroutine(opponentChallengeWindowRoutine);
+
+        opponentChallengeWindowRoutine = StartCoroutine(OpponentClaimChallengeWindow());
+    }
+
+    private IEnumerator OpponentClaimChallengeWindow()
+    {
+        // Small window for the player to click "Challenge"
+        yield return new WaitForSecondsRealtime(3f);
+
+        if (ChallengeButton.Instance != null)
+            ChallengeButton.Instance.HideChallenge();
+
+        // No challenge: execute opponent's claimed abilities, then discard the played card
+        GameEventLog.AppendGlobal("No challenge: opponent claim resolves.");
+        ExecuteClaimedRoleAbilities(false);
+        FinalizePendingOpponentPlay();
+    }
+
+    private void FinalizePendingOpponentPlay()
+    {
+        if (pendingOpponentPlayedCard == null)
+        {
+            pendingOpponentPlayedCard = null;
+            return;
+        }
+
+        // End the pending-claim state without forcing an extra card loss.
+        // Opponent card loss should happen only from challenge/ability outcomes.
+        /*CardDisplay display = pendingOpponentPlayedCard.GetComponent<CardDisplay>();
+        if (display != null)
+        {
+            display.SetFaceUp(false);
+        }*/
+
+        pendingOpponentPlayedCard = null;
+    }
+    #endregion
+
     #region Card Loss Management
-    /// <summary>
-    /// Attempts to remove a random card from the specified player's hand.
-    /// Returns true if successful, false if hand is empty or invalid.
-    /// </summary>
     public bool TryLoseRandomCard(bool isPlayer)
     {
         if (HandManager.Instance == null)
@@ -428,20 +622,21 @@ public class GameManager : MonoBehaviour
             return false;
         }
 
-        var hand = isPlayer ? HandManager.Instance.playerHandCards : HandManager.Instance.opponentHandCards;
-        
-        // Check if hand has cards before attempting to remove
+        var hand = isPlayer
+            ? HandManager.Instance.playerHandCards
+            : HandManager.Instance.opponentHandCards;
+
         if (hand == null || hand.Count == 0)
         {
             string playerName = isPlayer ? "Player" : "Opponent";
-            Debug.LogWarning($"TryLoseRandomCard: {playerName} has no cards to lose! (Hand count: {(hand == null ? "null" : hand.Count.ToString())})");
+            Debug.LogWarning($"TryLoseRandomCard: {playerName} has no cards to lose!");
             return false;
         }
 
         GameObject randomCard = HandManager.Instance.GetRandomCard(isPlayer);
         if (randomCard == null)
         {
-            Debug.LogWarning($"TryLoseRandomCard: GetRandomCard returned null for {(isPlayer ? "player" : "opponent")}!");
+            Debug.LogWarning($"TryLoseRandomCard: GetRandomCard returned null!");
             return false;
         }
 
@@ -449,30 +644,26 @@ public class GameManager : MonoBehaviour
         return true;
     }
 
-    /// <summary>
-    /// Legacy method - use TryLoseRandomCard instead for safety checks.
-    /// </summary>
     [System.Obsolete("Use TryLoseRandomCard instead for safety checks")]
     public void LoseRandomCard(bool isPlayer)
     {
         if (!TryLoseRandomCard(isPlayer))
-        {
             Debug.LogWarning($"LoseRandomCard: Failed to remove card from {(isPlayer ? "player" : "opponent")} hand.");
-        }
     }
     #endregion
 
-    #region Animations 
+    #region Animations
     public void GameOver(bool playerWon)
     {
         Time.timeScale = 0f;
-        
+        GameEventLog.AppendGlobal(playerWon ? "Game over: Victory." : "Game over: Defeat.");
+
         if (GameOverAnimation.Instance == null)
         {
-            Debug.LogError("GameOverAnimation.Instance is null! Make sure GameOverAnimation exists in the scene.");
+            Debug.LogError("GameOverAnimation.Instance is null!");
             return;
         }
-        
+
         if (playerWon)
             GameOverAnimation.Instance.ShowVictory();
         else

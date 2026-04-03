@@ -1,4 +1,5 @@
 using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class GuessMenu : MonoBehaviour
@@ -10,6 +11,15 @@ public class GuessMenu : MonoBehaviour
     public Button guessMenuButton;  // Drag your guess menu button here
 
     public bool isClicked = false;
+
+    void Update()
+    {
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            Debug.Log("key pressed");
+            HideGuessMenu();
+        }
+    }
     
     private void Awake()
     {
@@ -58,9 +68,10 @@ public class GuessMenu : MonoBehaviour
             Debug.LogError("GuessRole: RoleAbilityManager.Instance is null!");
             return;
         }
-
+        
         RoleAbilityManager.Instance.PredictRole(roleName);
         HideGuessMenu(); // Hide menu after guessing
+        ClaimMenu.Instance.HideClaimMenu();
     }
 
     public static GuessMenu GetInstance()

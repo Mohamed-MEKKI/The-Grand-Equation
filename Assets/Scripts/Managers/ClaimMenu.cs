@@ -1,15 +1,28 @@
-﻿using UnityEngine;
+using UnityEngine;
+using UnityEngine.InputSystem;
 using UnityEngine.UI;
 
 public class ClaimMenu : MonoBehaviour
 {
-    private static ClaimMenu Instance;
+    public static ClaimMenu Instance;
 
     [Header("UI")]
     public GameObject claimMenuPanel;
     public Button claimMenuButton;  // Drag your claim menu button here
 
     public bool isclicked = false;
+
+    void Update()
+    {
+        if (GameManager.Instance != null && !GameManager.Instance.isPlayerTurn)
+            SetClaimButtonVisible(false);
+
+        if (Keyboard.current.escapeKey.wasPressedThisFrame)
+        {
+            Debug.Log("key pressed");
+            HideClaimMenu();
+        }
+    }
     private void Awake()
     {
         Instance = this;
@@ -43,10 +56,28 @@ public class ClaimMenu : MonoBehaviour
     public void ClaimDeputy() => Claim("Deputy");
     public void ClaimBoss() => Claim("Boss");
 
+
+    public void DisableClaimButton()
+    {
+        claimMenuButton.gameObject.SetActive(false);
+    }
+
+    public void SetClaimButtonVisible(bool isVisible)
+    {
+        if (claimMenuButton != null)
+            claimMenuButton.gameObject.SetActive(isVisible);
+
+        // If we hide the claim button, ensure its panel is also closed.
+        if (!isVisible)
+            HideClaimMenu();
+    }
     private void Claim(string roleName)
     {
-        
+        // Tell the GameManager to process the claim
         GameManager.Instance.ClaimRoleByName(roleName);
-        HideClaimMenu(); // Hide menu after claiming
+
+        // Always hide the menu after claiming and update state consistently.
+        // Removed duplicate calls and special-case that re-called ClaimRoleByName.
+        HideClaimMenu();
     }
 }

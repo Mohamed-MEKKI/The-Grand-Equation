@@ -12,13 +12,13 @@ public class RoleAbility
 public enum AbilityType
 {
     BlockAssassination,     // General
-    PredictRole,            // National Guard
-    PeekOtherCard,          // Deputy
+    PredictRole,            // General
+    PeekOtherCard,          // National Guard
     StealCoins,             // Thief
     TaxAllPlayers,          // Fiscalité
-    SwapCards,           // Boss
+    SwapCards,           // Deputy
     Assassinate,             // Assassin
-    EliminateCard,
+    EliminateCard,           //ALL
     GetCoins    //Boss
 }
 [System.Serializable]

@@ -5,28 +5,51 @@ using UnityEngine.Audio;
 
 public class MenuManager : MonoBehaviour
 {
-    //public GameObject settingsPanel;
-    //public Slider volumeSlider;
-    //public Toggle fullscreenToggle;
-    //public AudioMixer audioMixer;
+        [SerializeField] private GameObject SettingsPanel;
+    [SerializeField] private GameObject RulesPanel;
 
-    void Start()
+    private void Start()
     {
-        // Load saved settings
-        //volumeSlider.value = PlayerPrefs.GetFloat("Volume", 1f);
-        //fullscreenToggle.isOn = PlayerPrefs.GetInt("Fullscreen", 1) == 1;
-        //Screen.fullScreen = fullscreenToggle.isOn;
+        
     }
 
     // --- Button Actions ---
     public void PlayGame()
     {
-        SceneManager.LoadScene("GameScene"); // Your game scene
+        SceneManager.LoadScene("GameScene");
     }
-    public void OpenSettings()
+
+    public void OnClickSaveSettings()
     {
-        Time.timeScale = 1f;
-        SceneManager.LoadScene("PersistentUISettings");
+
+        HideSettingsMenu();
+    }
+
+    public void OnClickSettingsMenu()
+    {
+        Debug.Log("Clicked");
+        SetPanelActive(SettingsPanel, true);
+    }
+
+    public void HideSettingsMenu()
+    {
+        SetPanelActive(SettingsPanel, false);
+    }
+
+    public void ToggleSettingsMenu()
+    {
+        if (SettingsPanel == null) return;
+        SetPanelActive(SettingsPanel, !SettingsPanel.activeSelf);
+    }
+
+    public void OnClickShowRulesPanel()
+    {
+        SetPanelActive(RulesPanel, true);
+    }
+
+    public void OnClickHideRulesPanel()
+    {
+        SetPanelActive(RulesPanel, false);
     }
 
     public void QuitGame()
@@ -34,4 +57,13 @@ public class MenuManager : MonoBehaviour
         Application.Quit();
         UnityEditor.EditorApplication.isPlaying = false;
     }
+
+    // --- Private helpers ---
+    private void SetPanelActive(GameObject panel, bool active)
+    {
+        if (panel == null) return;
+        panel.SetActive(active);
+    }
+
+ 
 }

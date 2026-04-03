@@ -1,8 +1,10 @@
-﻿using UnityEngine;
+using UnityEngine;
 using TMPro;
 
 public class GameTimer : MonoBehaviour
 {
+    public static GameTimer Instance { get; private set; }
+
     public float maxTime = 100f; // Maximum time for the timer
     private float countDown; // Current countdown value
     public TextMeshProUGUI timerText; // Reference to TimerText
@@ -15,6 +17,17 @@ public class GameTimer : MonoBehaviour
 
     private int lastWholeSecond; // To track ticks
     private bool alarmMuted = true; // start muted by code (can also mute in Inspector)
+
+    private void Awake()
+    {
+        if (Instance != null && Instance != this)
+        {
+            Debug.LogWarning("GameTimer: Multiple instances in scene; destroying duplicate.");
+            Destroy(gameObject);
+            return;
+        }
+        Instance = this;
+    }
 
     private void Start()
     {
@@ -41,9 +54,8 @@ public class GameTimer : MonoBehaviour
             alarmAudioSource.mute = alarmMuted; // start muted
         }
 
-        countDown = maxTime;
-        lastWholeSecond = Mathf.FloorToInt(countDown);
-        UpdateTimerText();
+        // Do not count until GameManager starts the player's turn (avoids drift before GameLoop).
+        StopBetweenTurns();
     }
 
     private void Update()
@@ -96,6 +108,9 @@ public class GameTimer : MonoBehaviour
             labelText.text = "Time's Up!";
         }
 
+        // Drive turn end the same way as TurnTimer (scene usually has GameTimer, not TurnTimer).
+        GameManager.Instance?.EndPlayerTurn();
+
         // Defensive: stop the ticking sound before playing the alarm to avoid overlap.
         if (tickAudioSource != null && tickAudioSource.isPlaying)
         {
@@ -143,9 +158,26 @@ public class GameTimer : MonoBehaviour
 
     public void ResetTimer()
     {
+        BeginPlayerTurn();
+    }
+
+    /// <summary>Fully reset and run during the local player's turn.</summary>
+    public void BeginPlayerTurn()
+    {
         countDown = maxTime;
         isRunning = true;
         isPaused = false;
+        lastWholeSecond = Mathf.FloorToInt(countDown);
+        if (labelText != null)
+            labelText.text = "";
+        UpdateTimerText();
+    }
+
+    /// <summary>Stop counting; show full time (e.g. opponent turn).</summary>
+    public void StopBetweenTurns()
+    {
+        isRunning = false;
+        countDown = maxTime;
         lastWholeSecond = Mathf.FloorToInt(countDown);
         UpdateTimerText();
     }

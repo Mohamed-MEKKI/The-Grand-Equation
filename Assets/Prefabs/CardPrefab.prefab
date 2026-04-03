@@ -1855,7 +1855,7 @@ MonoBehaviour:
   m_OnCullStateChanged:
     m_PersistentCalls:
       m_Calls: []
-  m_Sprite: {fileID: 21300000, guid: db4ca075bb9743a4e8cf097ac8ada6b9, type: 3}
+  m_Sprite: {fileID: 0}
   m_Type: 0
   m_PreserveAspect: 0
   m_FillCenter: 1
@@ -2175,7 +2175,7 @@ MonoBehaviour:
   m_PrefabInstance: {fileID: 0}
   m_PrefabAsset: {fileID: 0}
   m_GameObject: {fileID: 9177452021964098996}
-  m_Enabled: 1
+  m_Enabled: 0
   m_EditorHideFlags: 0
   m_Script: {fileID: 11500000, guid: 8cb7c1189d3403b4a8cdec5c2acf51a8, type: 3}
   m_Name: 
@@ -2186,14 +2186,14 @@ MonoBehaviour:
   card:
     cardId: 1
     cardName: General
-    description: Protects against assassination.
-    artwork: {fileID: 21300000, guid: db4ca075bb9743a4e8cf097ac8ada6b9, type: 3}
-    possibleActions: Stop the assassin
+    description: Pays 4 coins to guess other player role and Protects against assassination.
+    artwork: {fileID: 0}
+    possibleActions: Predict another player role and Stop the assassin
     abilities:
-    - abilityName: Block Assassination
-      type: 0
+    - abilityName: Predict Role
+      type: 1
       value: 1
-      target: Assassin
+      target: Player
   cardBack: {fileID: 2326451528682490060, guid: 0495212dc9a1b6d42afbf209d9c746a3, type: 3}
 --- !u!114 &8220804046350954111
 MonoBehaviour:

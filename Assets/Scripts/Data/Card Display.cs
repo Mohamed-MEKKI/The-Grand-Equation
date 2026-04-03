@@ -19,6 +19,8 @@ public class CardDisplay : MonoBehaviour
         card = definer;
         nameText.text = card.cardName;
         artworkImage.sprite = card.artwork;
+        if (artworkImage != null && card != null && card.artwork == null)
+            Debug.LogWarning($"CardDisplay.Setup: Missing artwork sprite for card '{card.cardName}'.");
 
         // NEW: Show abilities above card
         ShowAbilities(card.abilities);
