@@ -10,6 +10,7 @@ using DG.Tweening;
 /// </summary>
 public class EndRoundAnimation : MonoBehaviour
 {
+    public static EndRoundAnimation Instance { get; private set; }
     #region Fields
     [Header("UI References")]
     [SerializeField] private CanvasGroup flash;
@@ -28,10 +29,23 @@ public class EndRoundAnimation : MonoBehaviour
     [SerializeField] private bool enablePulseEffect = true;
     [SerializeField] private bool enableRotationEffect = true;
 
+    public event System.Action OnAnimationComplete;
     private bool isPlaying = false;
     private Sequence animationSequence;
     private Tween pulseTween;
     #endregion
+
+    private void Awake()
+    {
+        if (Instance == null)
+        {
+            Instance = this;
+        }
+        else if (Instance != this)
+        {
+            Destroy(gameObject);
+        }
+    }
 
     #region Public Methods
     /// <summary>
@@ -40,6 +54,8 @@ public class EndRoundAnimation : MonoBehaviour
     /// <param name="roundNumber">The round number that just ended.</param>
     public void Play(int roundNumber)
     {
+        Debug.Log($"GameObject active: {gameObject.activeSelf}, Parent active: {transform.parent?.gameObject.activeInHierarchy}");
+
         if (isPlaying)
         {
             Debug.LogWarning("EndRoundAnimation: Animation already playing!");
@@ -52,6 +68,7 @@ public class EndRoundAnimation : MonoBehaviour
             return;
         }
 
+        gameObject.SetActive(true); // activate BEFORE creating the sequence
         CreateAnimationSequence(roundNumber);
     }
 
@@ -82,13 +99,11 @@ public class EndRoundAnimation : MonoBehaviour
     {
         isPlaying = true;
 
-        // Initialize animation state
         roundText.text = $"ROUND {round} ENDED";
         flash.alpha = 0f;
         roundText.transform.localScale = Vector3.zero;
         roundText.transform.rotation = Quaternion.identity;
 
-        // Initialize decorative elements
         if (decorativeElements != null && decorativeElements.Length > 0)
         {
             foreach (var element in decorativeElements)
@@ -100,9 +115,6 @@ public class EndRoundAnimation : MonoBehaviour
                 }
             }
         }
-
-        // Activate the game object
-        gameObject.SetActive(true);
 
         // Create main sequence
         animationSequence = DOTween.Sequence();
@@ -174,7 +186,7 @@ public class EndRoundAnimation : MonoBehaviour
         animationSequence.OnComplete(() => {
             gameObject.SetActive(false);
             isPlaying = false;
-            NotifyRoundEnd();
+            OnAnimationComplete?.Invoke();
         });
 
         // Play the sequence
@@ -272,32 +284,5 @@ public class EndRoundAnimation : MonoBehaviour
         StopAnimation();
     }
 
-    private void OnDisable()
-    {
-        // Pause animations when disabled
-        if (animationSequence != null && animationSequence.IsActive())
-        {
-            animationSequence.Pause();
-        }
-
-        if (pulseTween != null && pulseTween.IsActive())
-        {
-            pulseTween.Pause();
-        }
-    }
-
-    private void OnEnable()
-    {
-        // Resume animations when enabled
-        if (animationSequence != null && animationSequence.IsActive())
-        {
-            animationSequence.Play();
-        }
-
-        if (pulseTween != null && pulseTween.IsActive())
-        {
-            pulseTween.Play();
-        }
-    }
     #endregion
 }

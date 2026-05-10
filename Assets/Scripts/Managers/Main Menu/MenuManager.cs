@@ -5,8 +5,12 @@ using UnityEngine.Audio;
 
 public class MenuManager : MonoBehaviour
 {
-        [SerializeField] private GameObject SettingsPanel;
+    [SerializeField] private GameObject SettingsPanel;
     [SerializeField] private GameObject RulesPanel;
+
+    [Header("Multiplayer launch")]
+    [Range(3, 5)]
+    [SerializeField] private int multiplayerRoundsToWin = 3;
 
     private void Start()
     {
@@ -16,13 +20,28 @@ public class MenuManager : MonoBehaviour
     // --- Button Actions ---
     public void PlayGame()
     {
-        SceneManager.LoadScene("GameScene");
+        SceneManager.LoadScene("LevelsScene");
     }
 
     public void OnClickSaveSettings()
     {
 
         HideSettingsMenu();
+    }
+
+    public void OnClickSelectMultiplayer()
+    {
+        // Persist multiplayer selection so the Game scene can pick it up on load
+        PlayerPrefs.SetInt("IsMultiplayer", 1);
+        PlayerPrefs.SetInt(GameManager.PlayerPrefsMultiplayerRounds, multiplayerRoundsToWin);
+        PlayerPrefs.Save();
+
+        // If GameManager exists in this scene (unlikely), set immediately
+        if (GameManager.Instance != null)
+        {
+            GameManager.Instance.SetMultiplayerMode(true);
+        }
+        SceneManager.LoadScene("GameScene");
     }
 
     public void OnClickSettingsMenu()

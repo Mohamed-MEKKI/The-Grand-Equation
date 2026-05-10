@@ -8,6 +8,15 @@ public class RoleAbilityManager : MonoBehaviour
     [Header("Game State")]
     public int playerCoins = 2;
     public int opponentCoins = 2;
+    
+    public AudioSource audSource;
+    public AudioClip coinSound;
+    public AudioClip bulletSound;
+    public AudioClip sirenSound;
+    public AudioClip areaSound;
+    public AudioClip swapSound;
+    public AudioClip stabSound;
+
     public List<PlayedCard> playerRoles = new List<PlayedCard>();
     public List<PlayedCard> opponentRoles = new List<PlayedCard>();
 
@@ -48,6 +57,7 @@ public class RoleAbilityManager : MonoBehaviour
                 // Show guess panel for player to select a role
                 if (isPlayer)
                 {
+                    ClaimMenu.Instance.HideClaimMenu();
                     ShowGuessPanel();
                 }
                 else
@@ -101,12 +111,16 @@ public class RoleAbilityManager : MonoBehaviour
             playerCoins += 4;
             UpdateCoinUI(true, amount);
             GameEventLog.AppendGlobal("Coins: Player +4.");
+            audSource.PlayOneShot(coinSound);
+
         }
         else if (isPlayer == false && opponentCoins < 9)
         {
             opponentCoins += 4;
             UpdateCoinUI(false, amount);
             GameEventLog.AppendGlobal("Coins: Opponent +4.");
+            audSource.PlayOneShot(coinSound);
+
         }
         else
         {
@@ -126,6 +140,7 @@ public class RoleAbilityManager : MonoBehaviour
         if (randomRole == null) return;
 
         randomRole.Reveal();
+        audSource.PlayOneShot(sirenSound);
         StartCoroutine(HideRevealedRoleAfterDelay(randomRole, 10f));
     }
 
@@ -157,6 +172,7 @@ public class RoleAbilityManager : MonoBehaviour
             playerCoins += stolen;
             UpdateCoinUI(true, stolen);
             UpdateCoinUI(false, -stolen);
+            audSource.PlayOneShot(coinSound);
             GameEventLog.AppendGlobal($"Coins: Player steals {stolen}.");
 
         }
@@ -166,6 +182,7 @@ public class RoleAbilityManager : MonoBehaviour
             opponentCoins += stolen;
             UpdateCoinUI(true, -stolen);
             UpdateCoinUI(false, +stolen);
+            audSource.PlayOneShot(coinSound);
             GameEventLog.AppendGlobal($"Coins: Opponent steals {stolen}.");
         }
 
@@ -184,6 +201,8 @@ public class RoleAbilityManager : MonoBehaviour
             UpdateCoinUI(true, amount);
             UpdateCoinUI(false, -amount);
             GameEventLog.AppendGlobal($"Coins: Player tax +{amount} (opponent -{amount}).");
+            audSource.PlayOneShot(coinSound);
+
         }
         else if (isPlayer == false && playerCoins > 0 && opponentCoins < 12)
         {
@@ -192,8 +211,10 @@ public class RoleAbilityManager : MonoBehaviour
             UpdateCoinUI(false, -amount);
             UpdateCoinUI(true, amount);
             GameEventLog.AppendGlobal($"Coins: Opponent tax +{amount} (player -{amount}).");
+            audSource.PlayOneShot(coinSound);
+
         }
-        
+
         Debug.Log($"💰 {(isPlayer ? "Player" : "Opponent")} gained {amount} coins from tax! Player: {playerCoins} | Opponent: {opponentCoins}");
     }
 
@@ -208,6 +229,7 @@ public class RoleAbilityManager : MonoBehaviour
                 GameObject targCard = HandManager.Instance.opponentHandCards[opponentRandomIndex];
                 HandManager.Instance.RemoveCardFromHand(targCard, false);
                 DeckManager.Instance.DrawToHand(false);
+                audSource.PlayOneShot(swapSound);
                 GameEventLog.AppendGlobal("Opponent swaps a card.");
             }
             return;
@@ -226,6 +248,7 @@ public class RoleAbilityManager : MonoBehaviour
         GameObject targetCard = HandManager.Instance.playerHandCards[playerRandomIndex];
         HandManager.Instance.RemoveCardFromHand(targetCard, true);
         DeckManager.Instance.DrawToHand(true);
+        audSource.PlayOneShot(swapSound);
         GameEventLog.AppendGlobal("Player swaps a card.");
     }
 
@@ -245,6 +268,7 @@ public class RoleAbilityManager : MonoBehaviour
         {
             playerCoins -= cost;
             UpdateCoinUI(isPlayer, -cost);
+
         }
         else 
         {
@@ -267,8 +291,11 @@ public class RoleAbilityManager : MonoBehaviour
 
         Debug.Log($"🗡️ {(isPlayer ? "Player" : "Opponent")} ASSASSINATED! {(isPlayer ? "Opponent" : "Player")} loses a card!");
         GameEventLog.AppendGlobal($"{(isPlayer ? "Player" : "Opponent")} assassinates: target loses a card.");
+        audSource.PlayOneShot(stabSound);
 
         HandManager.Instance.RemoveCardFromHand(targetCard, !isPlayer);  // !isPlayer = target is opponent
+        audSource.PlayOneShot(stabSound);
+
     }
 
     // UI hook: connect the "Assassinate" button to this method.
@@ -302,6 +329,8 @@ public class RoleAbilityManager : MonoBehaviour
         }
 
         Assassinate(assassinateCost, true);
+        audSource.PlayOneShot(bulletSound);
+
         GameManager.Instance.EndTurn();
     }
 
@@ -317,16 +346,12 @@ public class RoleAbilityManager : MonoBehaviour
                 HandManager.Instance.RemoveCardFromHand(targetCard, false);
                 Debug.Log("Opponent eliminated a card!");
                 GameEventLog.AppendGlobal("Opponent eliminates a card.");
+                audSource.PlayOneShot(bulletSound);
+
             }
             return;
         }
 
-        // Player needs to select a card manually
-        if (!GameManager.Instance.isPlayerTurn)
-        {
-            Debug.Log("❌ Not your turn!");
-            return;
-        }
         HandManager.Instance.EnterEliminationMode();  // ← Starts the process
         GameEventLog.AppendGlobal("Player is selecting a card to eliminate.");
     }
@@ -335,13 +360,47 @@ public class RoleAbilityManager : MonoBehaviour
     {
         _ = isPlayer;
         _ = amount;
+        RefreshCoinDisplays();
+    }
 
-        // Keep UI scoreboards synced with the real coin state.
-        if (MatchScoreboard.PlayerInstance != null)
-            MatchScoreboard.PlayerInstance.SetCredits(playerCoins);
+    /// <summary>
+    /// After swapping hands in local multiplayer, swap stored coin totals so
+    /// <see cref="playerCoins"/> always tracks the bottom hand (active human) and <see cref="opponentCoins"/> the top hand.
+    /// </summary>
+    public void SwapHandCoinSemanticsForLocalMultiplayer()
+    {
+        if (GameManager.Instance == null || !GameManager.Instance.IsMultiplayer)
+            return;
 
-        if (MatchScoreboard.OpponentInstance != null)
-            MatchScoreboard.OpponentInstance.SetCredits(opponentCoins);
+        int t = playerCoins;
+        playerCoins = opponentCoins;
+        opponentCoins = t;
+    }
+
+    /// <summary>
+    /// Pushes current <see cref="playerCoins"/> / <see cref="opponentCoins"/> to match scoreboards.
+    /// In pass-the-device mode, scoreboard <i>widgets</i> swap screen sides while names stay fixed — invert mapping when needed.
+    /// </summary>
+    public void RefreshCoinDisplays()
+    {
+        bool invert = GameManager.Instance != null
+                      && GameManager.Instance.IsMultiplayer
+                      && GameManager.Instance.LocalMultiplayerScoreboardsSwapped;
+
+        if (invert)
+        {
+            if (MatchScoreboard.PlayerInstance != null)
+                MatchScoreboard.PlayerInstance.SetCredits(opponentCoins);
+            if (MatchScoreboard.OpponentInstance != null)
+                MatchScoreboard.OpponentInstance.SetCredits(playerCoins);
+        }
+        else
+        {
+            if (MatchScoreboard.PlayerInstance != null)
+                MatchScoreboard.PlayerInstance.SetCredits(playerCoins);
+            if (MatchScoreboard.OpponentInstance != null)
+                MatchScoreboard.OpponentInstance.SetCredits(opponentCoins);
+        }
     }
 
     public void ResetCoinsForNewRound()
@@ -412,6 +471,7 @@ public class RoleAbilityManager : MonoBehaviour
                 UpdateCoinUI(false, -amount);
             }
         }
+        GameManager.Instance.EndTurn();
     }
 
     void PredictRoleAI()
@@ -433,6 +493,8 @@ public class RoleAbilityManager : MonoBehaviour
         {
             Debug.Log($"🤖 AI correctly predicted you have {randomRole.cardName}!");
             GameEventLog.AppendGlobal($"AI prediction correct: player had {randomRole.cardName}.");
+
+            audSource.PlayOneShot(areaSound);
 
             int playerRandomIndex = Random.Range(0, HandManager.Instance.playerHandCards.Count);
             GameObject targetCard = HandManager.Instance.playerHandCards[playerRandomIndex];
@@ -501,44 +563,6 @@ public class RoleAbilityManager : MonoBehaviour
         }
 
         return false;
-    }
-
-    void RevealOpponentRoleCard(CardDefiner role)
-    {
-        if (HandManager.Instance == null || role == null) return;
-
-        // Find and reveal the opponent's card with this role
-        foreach (var card in HandManager.Instance.opponentHandCards)
-        {
-            if (card == null) continue;
-
-            CardDisplay display = card.GetComponent<CardDisplay>();
-            if (display != null && display.card != null && display.card.cardId == role.cardId)
-            {
-                display.SetFaceUp(true);
-                Debug.Log($"🔓 Revealed opponent's {role.cardName} card!");
-                break;
-            }
-        }
-    }
-
-    void RevealPlayerRoleCard(CardDefiner role)
-    {
-        if (HandManager.Instance == null || role == null) return;
-
-        // Find and reveal the player's card with this role
-        foreach (var card in HandManager.Instance.playerHandCards)
-        {
-            if (card == null) continue;
-
-            CardDisplay display = card.GetComponent<CardDisplay>();
-            if (display != null && display.card != null && display.card.cardId == role.cardId)
-            {
-                display.SetFaceUp(true);
-                Debug.Log($"🔓 Revealed your {role.cardName} card!");
-                break;
-            }
-        }
     }
 
     CardDefiner FindRoleInDatabase(string roleName)

@@ -1,7 +1,5 @@
-using System.Collections;
 using TMPro;
 using UnityEngine;
-using UnityEngine.UI;
 using DG.Tweening;
 
 /// <summary>
@@ -15,7 +13,9 @@ public class GameOverAnimation : MonoBehaviour
     [SerializeField] private CanvasGroup screen;
     [SerializeField] private TextMeshProUGUI bigText;
     [SerializeField] private TextMeshProUGUI resultText;
-    [SerializeField] private Image backgroundImage; // Optional background image
+    [SerializeField] private GameObject matchResultCanvas;
+    [SerializeField] private TextMeshProUGUI matchResultWinnerText;
+    [SerializeField] private TextMeshProUGUI matchResultScoreText;
 
     [Header("Audio")]
     [SerializeField] private AudioSource victoryMusic;
@@ -23,7 +23,9 @@ public class GameOverAnimation : MonoBehaviour
 
     [Header("Animation Settings")]
     [SerializeField] private float fadeInDuration = 1.5f;
+    [SerializeField] private float fadeOutDuration = 0.8f;
     [SerializeField] private float scaleAnimationDuration = 1.2f;
+    [SerializeField] private float scaleOutDuration = 0.6f;
     [SerializeField] private float displayDuration = 4f;
     [SerializeField] private float targetScale = 1.4f;
     [SerializeField] private float glowPulseSpeed = 2f;
@@ -33,7 +35,7 @@ public class GameOverAnimation : MonoBehaviour
 
     public static GameOverAnimation Instance { get; private set; }
     private bool isPlaying = false;
-    private Sequence mainSequence;
+    private Sequence animationSequence;
     private Tween glowTween;
     #endregion
 
@@ -85,9 +87,9 @@ public class GameOverAnimation : MonoBehaviour
     /// </summary>
     public void StopAnimation()
     {
-        if (mainSequence != null && mainSequence.IsActive())
+        if (animationSequence != null && animationSequence.IsActive())
         {
-            mainSequence.Kill();
+            animationSequence.Kill();
         }
 
         if (glowTween != null && glowTween.IsActive())
@@ -97,6 +99,55 @@ public class GameOverAnimation : MonoBehaviour
 
         isPlaying = false;
     }
+
+    /// <summary>
+    /// Hides the static match result canvas.
+    /// </summary>
+    public void HideMatchResultCanvas()
+    {
+        if (matchResultCanvas != null)
+            matchResultCanvas.SetActive(false);
+    }
+
+    /// <summary>
+    /// Shows the static match result canvas with winner and final score.
+    /// </summary>
+    public void ShowMatchResultCanvas(bool playerWon, int playerWins, int opponentWins)
+    {
+        // Ensure this component and parent hierarchy are active before toggling child UI.
+        EnsureHierarchyActive();
+
+        if (matchResultWinnerText != null)
+            matchResultWinnerText.text = playerWon ? "PLAYER WINS" : "OPPONENT WINS";
+
+        if (matchResultScoreText != null)
+            matchResultScoreText.text = $"{playerWins} - {opponentWins}";
+
+        if (matchResultCanvas != null)
+        {
+            // If the result canvas lives under an inactive parent object, force that chain active as well.
+            Transform current = matchResultCanvas.transform;
+            while (current != null)
+            {
+                if (!current.gameObject.activeSelf)
+                    current.gameObject.SetActive(true);
+                current = current.parent;
+            }
+
+            matchResultCanvas.SetActive(true);
+            CanvasGroup cg = matchResultCanvas.GetComponent<CanvasGroup>();
+            if (cg != null)
+            {
+                cg.alpha = 1f;
+                cg.interactable = true;
+                cg.blocksRaycasts = true;
+            }
+
+            Debug.Log($"GameOverAnimation: Showing match result ({playerWins}-{opponentWins}).");
+        }
+        else
+            Debug.LogWarning("GameOverAnimation: matchResultCanvas is not assigned.");
+    }
     #endregion
 
     #region Private Methods
@@ -105,23 +156,23 @@ public class GameOverAnimation : MonoBehaviour
     /// </summary>
     private void PlayAnimation(string title, Color color, AudioSource sfx, string resultMessage)
     {
+        if (isPlaying)
+        {
+            Debug.LogWarning("GameOverAnimation: Animation already playing!");
+            return;
+        }
+
         if (!ValidateComponents())
         {
             Debug.LogError("GameOverAnimation: Missing required components! Cannot play animation.");
             return;
         }
 
-        // Kill any existing animations
         StopAnimation();
-
-        // Initialize animation state
-        InitializeAnimationState(title, color, resultMessage);
-
-        // Activate the game object
+        EnsureHierarchyActive();
         gameObject.SetActive(true);
 
-        // Create main animation sequence
-        CreateMainSequence(sfx, color);
+        CreateAnimationSequence(title, color, sfx, resultMessage);
     }
 
     /// <summary>
@@ -137,50 +188,39 @@ public class GameOverAnimation : MonoBehaviour
         bigText.transform.localScale = Vector3.zero;
         bigText.transform.rotation = Quaternion.identity;
 
-        if (backgroundImage != null)
-        {
-            backgroundImage.color = new Color(color.r, color.g, color.b, 0f);
-        }
     }
 
     /// <summary>
     /// Creates the main DOTween sequence with all animations.
     /// </summary>
-    private void CreateMainSequence(AudioSource sfx, Color baseColor)
+    private void CreateAnimationSequence(string title, Color baseColor, AudioSource sfx, string resultMessage)
     {
         isPlaying = true;
+        InitializeAnimationState(title, baseColor, resultMessage);
 
-        // Create sequence
-        mainSequence = DOTween.Sequence();
-        mainSequence.SetAutoKill(false);
-        mainSequence.SetRecyclable(true);
+        animationSequence = DOTween.Sequence();
+        animationSequence.SetAutoKill(false);
+        animationSequence.SetRecyclable(true);
+        animationSequence.SetUpdate(true);
 
-        // Step 1: Fade in screen background
-        mainSequence.Append(screen.DOFade(1f, fadeInDuration)
+        // Step 1: Overlay fade in
+        animationSequence.Append(screen.DOFade(1f, fadeInDuration)
             .SetEase(Ease.OutQuad));
 
-        // Step 2: Background color pulse (if background image exists)
-        if (backgroundImage != null)
-        {
-            mainSequence.Join(backgroundImage.DOFade(0.3f, fadeInDuration)
-                .SetEase(Ease.OutQuad));
-        }
-
-        // Step 3: Big text scale animation with elastic bounce
-        mainSequence.Append(bigText.transform.DOScale(targetScale, scaleAnimationDuration)
+        // Step 2: Title scale in
+        animationSequence.Join(bigText.transform.DOScale(targetScale, scaleAnimationDuration)
             .SetEase(Ease.OutElastic)
             .OnStart(() => {
-                // Play sound when text starts animating
                 if (sfx != null)
                 {
                     sfx.Play();
                 }
             }));
 
-        // Step 4: Big text rotation shake effect
+        // Step 3: Title punch rotation
         if (enableShakeEffect)
         {
-            mainSequence.Join(bigText.transform.DOPunchRotation(
+            animationSequence.Join(bigText.transform.DOPunchRotation(
                 new Vector3(0, 0, rotationAmount), 
                 scaleAnimationDuration * 0.5f, 
                 5, 
@@ -188,32 +228,40 @@ public class GameOverAnimation : MonoBehaviour
                 .SetEase(Ease.OutQuad));
         }
 
-        // Step 5: Result text fade in with delay
-        mainSequence.AppendCallback(() => {
+        // Step 4: Result text reveal
+        animationSequence.AppendCallback(() => {
             resultText.DOFade(1f, 0.8f)
                 .SetEase(Ease.InQuad)
-                .SetDelay(0.3f);
+                .SetDelay(0.3f)
+                .SetUpdate(true);
         });
 
-        // Step 6: Continuous glow pulse effect
+        // Step 5: Glow pulse during hold
         if (enableGlowEffect)
         {
-            mainSequence.AppendCallback(() => {
+            animationSequence.AppendCallback(() => {
                 StartGlowPulse(baseColor);
             });
         }
 
-        // Step 7: Wait for display duration
-        mainSequence.AppendInterval(displayDuration);
+        // Step 6: Hold
+        animationSequence.AppendInterval(displayDuration);
 
-        // Step 8: OnComplete callback
-        mainSequence.OnComplete(() => {
+        // Step 7: Fade out + title scale out (same rhythm as EndRoundAnimation)
+        animationSequence.Append(screen.DOFade(0f, fadeOutDuration)
+            .SetEase(Ease.InQuad));
+        animationSequence.Join(bigText.transform.DOScale(0f, scaleOutDuration)
+            .SetEase(Ease.InBack));
+        animationSequence.Join(resultText.DOFade(0f, scaleOutDuration)
+            .SetEase(Ease.InQuad));
+
+        // Step 8: Complete
+        animationSequence.OnComplete(() => {
             isPlaying = false;
             Debug.Log("GameOverAnimation: Animation sequence completed.");
         });
 
-        // Play the sequence
-        mainSequence.Play();
+        animationSequence.Play();
     }
 
     /// <summary>
@@ -229,7 +277,25 @@ public class GameOverAnimation : MonoBehaviour
             glowPulseSpeed)
             .SetEase(Ease.InOutSine)
             .SetLoops(-1, LoopType.Yoyo)
-            .SetRecyclable(true);
+            .SetRecyclable(true)
+            .SetUpdate(true);
+    }
+
+    /// <summary>
+    /// Activates this object and all parents so the animation can render.
+    /// </summary>
+    private void EnsureHierarchyActive()
+    {
+        Transform current = transform;
+        while (current != null)
+        {
+            if (!current.gameObject.activeSelf)
+            {
+                current.gameObject.SetActive(true);
+            }
+
+            current = current.parent;
+        }
     }
 
     /// <summary>
@@ -268,9 +334,9 @@ public class GameOverAnimation : MonoBehaviour
     private void OnDisable()
     {
         // Pause animations when disabled
-        if (mainSequence != null && mainSequence.IsActive())
+        if (animationSequence != null && animationSequence.IsActive())
         {
-            mainSequence.Pause();
+            animationSequence.Pause();
         }
 
         if (glowTween != null && glowTween.IsActive())
@@ -282,9 +348,9 @@ public class GameOverAnimation : MonoBehaviour
     private void OnEnable()
     {
         // Resume animations when enabled
-        if (mainSequence != null && mainSequence.IsActive())
+        if (animationSequence != null && animationSequence.IsActive())
         {
-            mainSequence.Play();
+            animationSequence.Play();
         }
 
         if (glowTween != null && glowTween.IsActive())

@@ -61,6 +61,7 @@ public class DeckManager : MonoBehaviour
         if (cardsInDeck.Count == 0)
         {
             Debug.Log("DECK EMPTY!");
+            BuildAndShuffleDeck();
             return;
         }
 

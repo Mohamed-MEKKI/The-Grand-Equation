@@ -6,14 +6,18 @@ public class HandManager : MonoBehaviour
     public static HandManager Instance { get; private set; }
 
     [Header("Player Hand")]
-    public Transform playerHandTransform;     // Your "HandPanel"
+    public RectTransform playerHandTransform ;     // Your "HandPanel"
 
     [Header("Opponent Hand")]
-    public Transform opponentHandTransform;   // NEW: Drag opponent panel here
+    public RectTransform opponentHandTransform;   // NEW: Drag opponent panel here
 
     [Header("Settings")]
     public float cardSpacing = 120f;
     public float opponentYOffset = -200f;     // Top of screen offset
+
+    [Header("Multiplayer (pass the device)")]
+    [Tooltip("If > 0 and GameManager.IsMultiplayer, overrides cardSpacing when laying out hands.")]
+    [SerializeField] private float multiplayerCardSpacingOverride = 0f;
 
     public List<GameObject> playerHandCards = new List<GameObject>();
     public List<GameObject> opponentHandCards = new List<GameObject>();
@@ -46,9 +50,66 @@ public class HandManager : MonoBehaviour
     public Vector3 GetHandPosition(bool isPlayer)
     {
         List<GameObject> hand = isPlayer ? playerHandCards : opponentHandCards;
-        float totalWidth = (hand.Count - 1) * cardSpacing;
+        float spacing = GetActiveCardSpacing();
+        float totalWidth = (hand.Count - 1) * spacing;
         float startX = -totalWidth / 2;
-        return new Vector3(startX + hand.Count * cardSpacing * 0.6f, 0, 0);  // Spread
+        return new Vector3(startX + hand.Count * spacing * 0.6f, 0, 0);  // Spread
+    }
+
+    private float GetActiveCardSpacing()
+    {
+        if (multiplayerCardSpacingOverride > 0f &&
+            GameManager.Instance != null &&
+            GameManager.Instance.IsMultiplayer)
+            return multiplayerCardSpacingOverride;
+        return cardSpacing;
+    }
+
+    public void SwapHandPositions()
+    {
+        // If either transform or lists are missing, bail out
+        if (playerHandTransform == null || opponentHandTransform == null)
+        {
+            Debug.LogWarning("SwapHandPositions: hand transforms not assigned.");
+            return;
+        }
+
+        // Move all player cards to opponent transform, and opponent cards to player transform
+        foreach (var card in playerHandCards)
+        {
+            if (card != null)
+                card.transform.SetParent(opponentHandTransform, false);
+        }
+
+        foreach (var card in opponentHandCards)
+        {
+            if (card != null)
+                card.transform.SetParent(playerHandTransform, false);
+        }
+
+        // Swap the internal lists so logical ownership matches the visual parent
+        var tempList = new List<GameObject>(playerHandCards);
+        playerHandCards.Clear();
+        playerHandCards.AddRange(opponentHandCards);
+        opponentHandCards.Clear();
+        opponentHandCards.AddRange(tempList);
+
+        // Update face-up state: player's hand should be face up, opponent's face down
+        foreach (var card in playerHandCards)
+        {
+            if (card == null) continue;
+            card.GetComponent<CardDisplay>()?.SetFaceUp(true);
+        }
+
+        foreach (var card in opponentHandCards)
+        {
+            if (card == null) continue;
+            card.GetComponent<CardDisplay>()?.SetFaceUp(false);
+        }
+
+        // Re-arrange both hands to their new parents
+        ArrangeHand(true);
+        ArrangeHand(false);
     }
 
     public void RemoveCardFromHand(GameObject cardObj, bool isPlayer = true)
@@ -96,13 +157,14 @@ public class HandManager : MonoBehaviour
 
         if (handCards.Count == 0) return;
 
-        float totalWidth = (handCards.Count - 1) * cardSpacing;
+        float spacing = GetActiveCardSpacing();
+        float totalWidth = (handCards.Count - 1) * spacing;
         float startX = -totalWidth / 2f;
 
         for (int i = 0; i < handCards.Count; i++)
         {
             RectTransform rt = handCards[i].GetComponent<RectTransform>();
-            rt.anchoredPosition = new Vector2(startX + i * cardSpacing, 0f);
+            rt.anchoredPosition = new Vector2(startX + i * spacing, 0f);
             rt.localScale = Vector3.one;
         }
     }

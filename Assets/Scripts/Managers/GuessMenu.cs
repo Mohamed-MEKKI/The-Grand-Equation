@@ -71,7 +71,6 @@ public class GuessMenu : MonoBehaviour
         
         RoleAbilityManager.Instance.PredictRole(roleName);
         HideGuessMenu(); // Hide menu after guessing
-        ClaimMenu.Instance.HideClaimMenu();
     }
 
     public static GuessMenu GetInstance()

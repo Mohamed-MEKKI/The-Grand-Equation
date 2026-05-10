@@ -9,7 +9,10 @@ public class PauseManager : MonoBehaviour
 
     [Header("UI")]
     public GameObject pausePanel;
-    public Button pauseButton;  // Drag your pause button here
+    public Button pauseButton;
+    [SerializeField] private GameObject RulesPanel;
+    [SerializeField] private GameObject SettingsPanel;
+
 
     public bool isPaused = false;
 
@@ -24,6 +27,12 @@ public class PauseManager : MonoBehaviour
     void Awake()
     {
         Instance = this;
+        // Defensive: ensure we never start a scene paused with an active overlay blocking clicks.
+        isPaused = false;
+        if (pausePanel != null)
+            pausePanel.SetActive(false);
+        Time.timeScale = 1f;
+        AudioListener.pause = false;
     }
 
     // --- BUTTON CALLBACKS (called from Pause Button OnClick) ---
@@ -34,6 +43,7 @@ public class PauseManager : MonoBehaviour
     }
     public void OpenSettingsButton()
     {
+        SetPanelActive(SettingsPanel, true);
     }
 
     public void PauseGame()
@@ -42,9 +52,11 @@ public class PauseManager : MonoBehaviour
         pausePanel.SetActive(true);
         Time.timeScale = 0f;
         AudioListener.pause = true;
+    }
 
-        // Optional: Change button text to "Resume"
-        pauseButton.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "▶️";
+    public void OnClickShowRulesPanel()
+    {
+        SetPanelActive(RulesPanel, true);
     }
 
     public void ResumeGame()
@@ -53,9 +65,16 @@ public class PauseManager : MonoBehaviour
         pausePanel.SetActive(false);
         Time.timeScale = 1f;
         AudioListener.pause = false;
+    }
 
-        // Optional: Change button text back to "Pause"
-        pauseButton.GetComponentInChildren<TMPro.TextMeshProUGUI>().text = "⏸️";
+    public void CloseSettingsPanel()
+    {
+        SetPanelActive(SettingsPanel, false);
+    }
+
+    public void CloseRulesPanel()
+    {
+        SetPanelActive(RulesPanel, false);
     }
 
     // --- OTHER BUTTONS ---
@@ -71,5 +90,11 @@ public class PauseManager : MonoBehaviour
 #if UNITY_EDITOR
         UnityEditor.EditorApplication.isPlaying = false;
 #endif
+    }
+
+    private void SetPanelActive(GameObject panel, bool active)
+    {
+        if (panel == null) return;
+        panel.SetActive(active);
     }
 }

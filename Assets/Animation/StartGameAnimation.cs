@@ -36,6 +36,8 @@ public class StartGameAnimation : MonoBehaviour
     private bool hasPlayed = false;
     private Sequence mainSequence;
     private Tween glowTween;
+    public event System.Action OnAnimationComplete;
+
     #endregion
 
     #region Unity Lifecycle

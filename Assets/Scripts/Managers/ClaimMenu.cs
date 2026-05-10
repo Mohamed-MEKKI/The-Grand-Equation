@@ -12,10 +12,19 @@ public class ClaimMenu : MonoBehaviour
 
     public bool isclicked = false;
 
+    private bool claimButtonShownForTurn;
+
     void Update()
     {
-        if (GameManager.Instance != null && !GameManager.Instance.isPlayerTurn)
-            SetClaimButtonVisible(false);
+        if (GameManager.Instance != null)
+        {
+            bool wantShown = GameManager.Instance.isPlayerTurn;
+            if (wantShown != claimButtonShownForTurn)
+            {
+                claimButtonShownForTurn = wantShown;
+                SetClaimButtonVisible(wantShown);
+            }
+        }
 
         if (Keyboard.current.escapeKey.wasPressedThisFrame)
         {
@@ -26,6 +35,8 @@ public class ClaimMenu : MonoBehaviour
     private void Awake()
     {
         Instance = this;
+        // Ensure the panel doesn't start active and block clicks.
+        HideClaimMenu();
     }
 
     public void OnClaimRoleButtonClicked()
@@ -37,13 +48,15 @@ public class ClaimMenu : MonoBehaviour
     public void ShowClaimMenu()
     {
         isclicked = true;
-        claimMenuPanel.SetActive(true);
+        if (claimMenuPanel != null)
+            claimMenuPanel.SetActive(true);
     }
 
     public void HideClaimMenu()
     {
         isclicked = false;
-        claimMenuPanel.SetActive(false);
+        if (claimMenuPanel != null)
+            claimMenuPanel.SetActive(false);
     }
 
 
@@ -59,7 +72,8 @@ public class ClaimMenu : MonoBehaviour
 
     public void DisableClaimButton()
     {
-        claimMenuButton.gameObject.SetActive(false);
+        claimButtonShownForTurn = false;
+        SetClaimButtonVisible(false);
     }
 
     public void SetClaimButtonVisible(bool isVisible)
