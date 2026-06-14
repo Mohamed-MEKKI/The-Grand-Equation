@@ -1,45 +1,56 @@
-﻿using UnityEngine;
+using System.Collections;
+using UnityEngine;
 using UnityEngine.EventSystems;
 
 public class CardSelector : MonoBehaviour, IPointerClickHandler
 {
-    // ADD THIS LINE BACK!
     public HandManager.SelectionType selectionType;
 
     public void OnPointerClick(PointerEventData eventData)
     {
-        // Only allow elimination mode
-        if (selectionType != HandManager.SelectionType.EliminateOpponentHand) return;
+        if (HandManager.Instance == null) return;
 
-        // Safety check: Not in opponent hand? Ignore (can't eliminate own cards)
+        switch (selectionType)
+        {
+            case HandManager.SelectionType.EliminateOpponentHand:
+                HandleElimination();
+                break;
+
+            case HandManager.SelectionType.SwapPlayerCard:
+                HandleSwap();
+                break;
+        }
+    }
+
+    private void HandleElimination()
+    {
         if (!HandManager.Instance.opponentHandCards.Contains(gameObject))
         {
             Debug.LogWarning("Can't eliminate own card!");
             return;
         }
 
-        if (HandManager.Instance == null)
-        {
-            Debug.LogError("HandManager.Instance is NULL!");
-            return;
-        }
-
         Debug.Log($"ELIMINATED: {gameObject.name}");
-
-        // Remove from opponent's hand list
         HandManager.Instance.opponentHandCards.Remove(gameObject);
-        
-        // Rearrange opponent's hand
         HandManager.Instance.ArrangeHand(false);
-
-        // Exit elimination mode
         HandManager.Instance.ExitEliminationMode();
-
-        // Destroy with visual effect
         StartCoroutine(DestroyEffect());
     }
 
-    System.Collections.IEnumerator DestroyEffect()
+    private void HandleSwap()
+    {
+        if (!HandManager.Instance.playerHandCards.Contains(gameObject))
+        {
+            Debug.LogWarning("Can't swap opponent's card!");
+            return;
+        }
+
+        Debug.Log($"SWAPPED: {gameObject.name}");
+        HandManager.Instance.ExitSwapMode();
+        RoleAbilityManager.Instance?.CompletePlayerSwap(gameObject);
+    }
+
+    private IEnumerator DestroyEffect()
     {
         RectTransform rt = GetComponent<RectTransform>();
         CanvasGroup cg = GetComponent<CanvasGroup>();

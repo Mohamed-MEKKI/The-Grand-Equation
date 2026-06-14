@@ -46,7 +46,16 @@ public class GameManager : MonoBehaviour
     private GameObject pendingOpponentPlayedCard;
     private Coroutine opponentChallengeWindowRoutine;
     private bool pendingSwapAfterActions = false;
+    private bool awaitingPlayerAction = false;
     private int CurrentLevel { get; set; } = 0;
+    // Time to wait between automated turn steps; adjustable by difficulty level.
+    private float currentTurnWait = 1.2f;
+    // Index 0=Beginner, 1=Intermediate, 2=Hard
+    private float[] turnWaitByDifficulty = new float[] { 2.0f, 1.5f, 1.0f };
+    // Probability the AI will challenge a bluff: 25 / 50 / 75 %
+    private float[] challengeProbabilityByDifficulty = new float[] { 0.25f, 0.5f, 0.75f };
+    private float currentChallengeProbability = 0.5f;
+    public string DifficultyName { get; private set; } = "Intermediate";
     /// <summary>Two players taking turns on the same device (pass the phone). Set from menu via PlayerPrefs or <see cref="SetMultiplayerMode"/>.</summary>
     public bool IsMultiplayer { get; private set; }
 
@@ -84,9 +93,9 @@ public class GameManager : MonoBehaviour
         // Diagnostic log: confirm Awake ran and what value was read
         Debug.Log($"GameManager.Awake: PlayerPrefs.IsMultiplayer={mp}; IsMultiplayer={IsMultiplayer}");
 
-        // Clear the preference after reading to avoid affecting subsequent runs
-        if (mp != -1)
-            PlayerPrefs.DeleteKey("IsMultiplayer");
+        // Apply difficulty saved by LevelsManager (1=Beginner, 2=Intermediate, 3=Hard)
+        int diff = PlayerPrefs.GetInt("SelectedDifficulty", 2);
+        SetSelectedLevel(diff);
     }
 
     private void OnValidate()
@@ -113,6 +122,12 @@ public class GameManager : MonoBehaviour
     public void SetSelectedLevel(int index)
     {
         CurrentLevel = index;
+        // index is 1-based (1=Beginner, 2=Intermediate, 3=Hard)
+        int arrayIndex = Mathf.Clamp(index - 1, 0, turnWaitByDifficulty.Length - 1);
+        currentTurnWait = turnWaitByDifficulty[arrayIndex];
+        currentChallengeProbability = challengeProbabilityByDifficulty[arrayIndex];
+        DifficultyName = index switch { 1 => "Beginner", 3 => "Hard", _ => "Intermediate" };
+        Debug.Log($"Difficulty set: {DifficultyName} (level {index}), turnWait={currentTurnWait}s, challengeProb={currentChallengeProbability}");
     }
 
     public void SetMultiplayerMode(bool isMultiplayer)
@@ -147,26 +162,23 @@ public class GameManager : MonoBehaviour
         {
             CheckRoundEnd();
             if (isMatchOver) yield break;
-            yield return new WaitForSecondsRealtime(5f);
+            yield return new WaitForSecondsRealtime(currentTurnWait);
             if (isMatchOver) yield break;
             yield return StartCoroutine(PlayerTurn());
             if (isMatchOver) yield break;
-            yield return new WaitForSecondsRealtime(5f);
+            yield return new WaitForSecondsRealtime(currentTurnWait);
             if (isMatchOver) yield break;
             CheckRoundEnd();
             if (isMatchOver) yield break;
-            yield return new WaitForSecondsRealtime(5f);
+            yield return new WaitForSecondsRealtime(currentTurnWait);
             if (isMatchOver) yield break;
 
-            // Multiplayer: both seats are human — second player acts after hands/score swap from first player's play.
             if (IsMultiplayer)
             {
-                if (isMatchOver) yield break;
                 yield return StartCoroutine(PlayerTurn());
             }
             else
             {
-                if (isMatchOver) yield break;
                 yield return StartCoroutine(OpponentTurn());
             }
         }
@@ -211,6 +223,7 @@ public class GameManager : MonoBehaviour
 
         // Brief pause so player sees it's opponent's turn
         yield return new WaitForSecondsRealtime(1.2f);
+
         if (isMatchOver) yield break;
 
         if (HandManager.Instance == null)
@@ -257,9 +270,15 @@ public class GameManager : MonoBehaviour
         StartPlayerTurnTimers();
     }
     */
+    public void SetAwaitingPlayerAction(bool awaiting)
+    {
+        awaitingPlayerAction = awaiting;
+    }
+
     public void EndTurn()
     {
         if (!isPlayerTurn) return;
+        if (awaitingPlayerAction) return;
 
         // Pass-the-device: normally after any action that ends the turn the other player
         // gets the bottom hand + their scoreboard side. If a swap has been deferred
@@ -278,6 +297,12 @@ public class GameManager : MonoBehaviour
     public void EndPlayerTurn()
     {
         if (PauseManager.Instance != null && PauseManager.Instance.isPaused) return;
+        if (awaitingPlayerAction)
+        {
+            awaitingPlayerAction = false;
+            HandManager.Instance?.ExitSwapMode();
+            GameEventLog.AppendGlobal("Swap cancelled: turn timed out.");
+        }
         Debug.Log("Player ran out of time!");
         GameEventLog.AppendGlobal("Turn timed out: Player ended turn.");
         EndTurn();
@@ -569,9 +594,9 @@ public class GameManager : MonoBehaviour
     }
     private IEnumerator AIDecideChallenge()
     {
-        yield return new WaitForSeconds(5);
+        yield return new WaitForSeconds(currentTurnWait);
 
-        if (UnityEngine.Random.value < 0.5f)
+        if (UnityEngine.Random.value < currentChallengeProbability)
         {
             ChallengeIssued();
         }
@@ -579,9 +604,9 @@ public class GameManager : MonoBehaviour
         {
             Debug.Log("Opponent lets it pass...");
             GameEventLog.AppendGlobal("Opponent lets it pass.");
-            yield return new WaitForSeconds(5);
+            yield return new WaitForSeconds(currentTurnWait);
             ExecuteClaimedRoleAbilities(true);
-            yield return new WaitForSeconds(5);
+            yield return new WaitForSeconds(currentTurnWait);
         }
     }
     public void OpponentChallengeIssued()
@@ -890,14 +915,18 @@ public class GameManager : MonoBehaviour
     private void ShowMatchResultUI(bool playerWon)
     {
         GameOverAnimation anim = gameOverAnimation != null ? gameOverAnimation : GameOverAnimation.Instance;
-        if (anim != null)
-        {
-            anim.ShowMatchResultCanvas(playerWon, playerRoundWins, opponentRoundWins);
-        }
-        else
+        if (anim == null)
         {
             Debug.LogWarning("GameManager: gameOverAnimation is missing (field and singleton are null).");
+            return;
         }
+
+        // Play the animated overlay first; show the static score panel when it finishes.
+        System.Action showCanvas = () => anim.ShowMatchResultCanvas(playerWon, playerRoundWins, opponentRoundWins);
+        if (playerWon)
+            anim.ShowVictory(showCanvas);
+        else
+            anim.ShowDefeat(showCanvas);
     }
 
     private void PlayEndRoundAnimation(int roundNumber)

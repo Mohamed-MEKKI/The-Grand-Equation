@@ -57,7 +57,7 @@ public class GameOverAnimation : MonoBehaviour
     /// <summary>
     /// Shows the victory screen animation with advanced DOTween features.
     /// </summary>
-    public void ShowVictory()
+    public void ShowVictory(System.Action onComplete = null)
     {
         if (isPlaying)
         {
@@ -65,13 +65,10 @@ public class GameOverAnimation : MonoBehaviour
             return;
         }
 
-        PlayAnimation("YOU WIN!", Color.green, victoryMusic, "All opponent cards eliminated");
+        PlayAnimation("YOU WIN!", Color.green, victoryMusic, "All opponent cards eliminated", onComplete);
     }
 
-    /// <summary>
-    /// Shows the defeat screen animation with advanced DOTween features.
-    /// </summary>
-    public void ShowDefeat()
+    public void ShowDefeat(System.Action onComplete = null)
     {
         if (isPlaying)
         {
@@ -79,7 +76,7 @@ public class GameOverAnimation : MonoBehaviour
             return;
         }
 
-        PlayAnimation("YOU LOSE...", Color.red, defeatMusic, "You have no cards left");
+        PlayAnimation("YOU LOSE...", Color.red, defeatMusic, "You have no cards left", onComplete);
     }
 
     /// <summary>
@@ -154,7 +151,7 @@ public class GameOverAnimation : MonoBehaviour
     /// <summary>
     /// Plays the game over animation with the specified parameters using DOTween sequences.
     /// </summary>
-    private void PlayAnimation(string title, Color color, AudioSource sfx, string resultMessage)
+    private void PlayAnimation(string title, Color color, AudioSource sfx, string resultMessage, System.Action onComplete = null)
     {
         if (isPlaying)
         {
@@ -172,7 +169,7 @@ public class GameOverAnimation : MonoBehaviour
         EnsureHierarchyActive();
         gameObject.SetActive(true);
 
-        CreateAnimationSequence(title, color, sfx, resultMessage);
+        CreateAnimationSequence(title, color, sfx, resultMessage, onComplete);
     }
 
     /// <summary>
@@ -193,14 +190,12 @@ public class GameOverAnimation : MonoBehaviour
     /// <summary>
     /// Creates the main DOTween sequence with all animations.
     /// </summary>
-    private void CreateAnimationSequence(string title, Color baseColor, AudioSource sfx, string resultMessage)
+    private void CreateAnimationSequence(string title, Color baseColor, AudioSource sfx, string resultMessage, System.Action onComplete = null)
     {
         isPlaying = true;
         InitializeAnimationState(title, baseColor, resultMessage);
 
         animationSequence = DOTween.Sequence();
-        animationSequence.SetAutoKill(false);
-        animationSequence.SetRecyclable(true);
         animationSequence.SetUpdate(true);
 
         // Step 1: Overlay fade in
@@ -257,8 +252,9 @@ public class GameOverAnimation : MonoBehaviour
 
         // Step 8: Complete
         animationSequence.OnComplete(() => {
+            if (glowTween != null && glowTween.IsActive()) glowTween.Kill();
             isPlaying = false;
-            Debug.Log("GameOverAnimation: Animation sequence completed.");
+            onComplete?.Invoke();
         });
 
         animationSequence.Play();

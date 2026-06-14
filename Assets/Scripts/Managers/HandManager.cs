@@ -22,7 +22,7 @@ public class HandManager : MonoBehaviour
     public List<GameObject> playerHandCards = new List<GameObject>();
     public List<GameObject> opponentHandCards = new List<GameObject>();
 
-    public enum SelectionType { None, EliminateOpponentHand }
+    public enum SelectionType { None, EliminateOpponentHand, SwapPlayerCard }
 
     public SelectionType currentSelection = SelectionType.None;
 
@@ -119,6 +119,31 @@ public class HandManager : MonoBehaviour
 
         ArrangeHand(isPlayer);
         if (cardObj != null) Destroy(cardObj);
+    }
+
+    public void EnterSwapMode()
+    {
+        currentSelection = SelectionType.SwapPlayerCard;
+        foreach (var card in playerHandCards)
+        {
+            var selector = card.GetComponent<CardSelector>();
+            if (selector == null)
+                selector = card.AddComponent<CardSelector>();
+            selector.selectionType = SelectionType.SwapPlayerCard;
+        }
+        GameEventLog.AppendGlobal("Select a card in your hand to swap.");
+        Debug.Log("Swap Mode: Click a card to replace it.");
+    }
+
+    public void ExitSwapMode()
+    {
+        currentSelection = SelectionType.None;
+        foreach (var card in playerHandCards)
+        {
+            var selector = card.GetComponent<CardSelector>();
+            if (selector != null)
+                Destroy(selector);
+        }
     }
 
     public void EnterEliminationMode()

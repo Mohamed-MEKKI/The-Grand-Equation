@@ -1,62 +1,67 @@
-using System;
 using UnityEngine;
-using UnityEngine.UI;           // Important for Button
+using UnityEngine.UI;
 using UnityEngine.SceneManagement;
 
 public class LevelsManager : MonoBehaviour
 {
-    [Header("Difficulty Buttons")]
-    public Button beginnerButton;
-    public Button intermediateButton;
-    public Button hardButton;
-    [Space]
-    [SerializeField] private string gameSceneName = "GameScene";
+    public enum Difficulty { Beginner = 1, Intermediate = 2, Hard = 3 }
 
-    private enum Difficulty
-    {
-        Beginner = 1,
-        Intermediate = 2,
-        Hard = 3
-    }
+    [Header("Scene Names")]
+    [SerializeField] private string gameSceneName = "GameScene";
+    [SerializeField] private string mainMenuSceneName = "MainMenu";
+
 
     private void Start()
     {
-        ConfigureButton(beginnerButton, Difficulty.Beginner);
-        ConfigureButton(intermediateButton, Difficulty.Intermediate);
-        ConfigureButton(hardButton, Difficulty.Hard);
+
     }
 
-    private void ConfigureButton(Button button, Difficulty difficulty)
-    {
-        if (button == null) return;
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(() => LoadDifficultyLevel((int)difficulty));
-    }
+    // ── Button wiring ──────────────────────────────────────────────
 
-    // One clean function that handles all difficulties
-    public void LoadDifficultyLevel(int difficultyIndex)
+    private void AddDifficultyListener(Button button, Difficulty difficulty)
     {
-        if (GameManager.Instance != null)
+        if (button == null)
         {
-            GameManager.Instance.SetSelectedLevel(difficultyIndex);
-            Debug.Log("Selected difficulty level: " + difficultyIndex);
-        }
-        else
-        {
-            Debug.LogWarning("LoadDifficultyLevel: GameManager.Instance is null. Difficulty stored nowhere.");
-        }
-
-        if (string.IsNullOrEmpty(gameSceneName))
-        {
-            Debug.LogError("LoadDifficultyLevel: gameSceneName is empty. Cannot load scene.");
+            Debug.LogWarning($"LevelsManager: {difficulty} button is not assigned.");
             return;
         }
 
-        SceneManager.LoadScene(gameSceneName);
+        button.onClick.RemoveAllListeners();
+        button.onClick.AddListener(() => OnDifficultySelected(difficulty));
     }
 
-    public void GoBackToMainMenu()
+    // ── onClick handlers ───────────────────────────────────────────
+
+    private void OnDifficultySelected(Difficulty difficulty)
     {
-        SceneManager.LoadScene("MainMenu");
+        SaveDifficulty(difficulty);
+        LoadGameScene();
+    }
+
+    public void OnBeginnerClicked() => OnDifficultySelected(Difficulty.Beginner);
+    public void OnIntermediateClicked() => OnDifficultySelected(Difficulty.Intermediate);
+    public void OnHardClicked() => OnDifficultySelected(Difficulty.Hard);
+    public void OnMainMenuClicked() => SceneManager.LoadScene(mainMenuSceneName);
+
+    // ── Core logic ─────────────────────────────────────────────────
+
+    private void SaveDifficulty(Difficulty difficulty)
+    {
+        PlayerPrefs.SetInt("SelectedDifficulty", (int)difficulty);
+        PlayerPrefs.Save();
+        Debug.Log($"LevelsManager: Difficulty saved → {difficulty} ({(int)difficulty})");
+    }
+
+    private void LoadGameScene()
+    {
+        if (string.IsNullOrEmpty(gameSceneName))
+        {
+            Debug.LogError("LevelsManager: gameSceneName is empty.");
+            return;
+        }
+
+        PlayerPrefs.SetInt("IsMultiplayer", 0);
+        PlayerPrefs.Save();
+        SceneManager.LoadScene(gameSceneName);
     }
 }

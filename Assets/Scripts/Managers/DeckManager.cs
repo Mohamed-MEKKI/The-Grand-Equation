@@ -24,11 +24,13 @@ public class DeckManager : MonoBehaviour
         }
         else
         {
+            // New game starting — reset the persistent deck so it's fresh
+            Instance.BuildAndShuffleDeck();
             Destroy(gameObject);
             return;
         }
 
-        BuildAndShuffleDeck(); 
+        BuildAndShuffleDeck();
     }
 
     void BuildAndShuffleDeck()

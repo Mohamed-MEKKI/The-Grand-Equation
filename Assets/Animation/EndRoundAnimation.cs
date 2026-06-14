@@ -118,8 +118,6 @@ public class EndRoundAnimation : MonoBehaviour
 
         // Create main sequence
         animationSequence = DOTween.Sequence();
-        animationSequence.SetAutoKill(false);
-        animationSequence.SetRecyclable(true);
 
         // Step 1: Flash fade in
         animationSequence.Append(flash.DOFade(maxFlashAlpha, fadeInDuration)
@@ -158,6 +156,12 @@ public class EndRoundAnimation : MonoBehaviour
 
         // Step 6: Wait for display duration
         animationSequence.AppendInterval(displayDuration);
+
+        // Stop infinite pulse before fade-out begins
+        animationSequence.AppendCallback(() => {
+            if (pulseTween != null && pulseTween.IsActive()) pulseTween.Kill();
+            if (roundText != null) roundText.transform.localScale = Vector3.one * targetScale;
+        });
 
         // Step 7: Fade out flash
         animationSequence.Append(flash.DOFade(0f, fadeOutDuration)

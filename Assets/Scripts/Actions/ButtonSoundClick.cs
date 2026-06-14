@@ -1,23 +1,28 @@
 using UnityEngine;
 using UnityEngine.UI;
 
+// Attach once to a persistent manager object. Finds only scene buttons and never re-registers them.
 public class AutoButtonSounds : MonoBehaviour
 {
     public AudioSource sfxSource;
     public AudioClip clickSound;
 
-    void Start()
+    private void Start()
     {
-        // 1. Find every single button in your entire scene
-        Button[] allButtons = Resources.FindObjectsOfTypeAll<Button>();
+        RegisterSceneButtons();
+    }
 
-        foreach (Button btn in allButtons)
-        {
-            // 2. Add the sound to every button automatically
-            btn.onClick.AddListener(() => {
-                Debug.Log("A button was actually clicked!"); // <--- ADD THIS
-                sfxSource.PlayOneShot(clickSound);
-            });
-        }
+    private void RegisterSceneButtons()
+    {
+        if (sfxSource == null || clickSound == null) return;
+
+        foreach (Button btn in FindObjectsByType<Button>(FindObjectsSortMode.None))
+            btn.onClick.AddListener(PlayClick);
+    }
+
+    private void PlayClick()
+    {
+        if (sfxSource != null && clickSound != null)
+            sfxSource.PlayOneShot(clickSound);
     }
 }

@@ -27,6 +27,13 @@ public class GameTimer : MonoBehaviour
             return;
         }
         Instance = this;
+
+        // Kill "Play On Awake" before it fires — Start() takes over audio control
+        foreach (var src in GetComponents<AudioSource>())
+        {
+            src.playOnAwake = false;
+            src.Stop();
+        }
     }
 
     private void Start()

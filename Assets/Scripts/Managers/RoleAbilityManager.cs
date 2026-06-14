@@ -176,7 +176,7 @@ public class RoleAbilityManager : MonoBehaviour
             GameEventLog.AppendGlobal($"Coins: Player steals {stolen}.");
 
         }
-        else if (isPlayer == false && playerCoins > 1 && playerCoins < 12)
+        else if (isPlayer == false && playerCoins > 1 && opponentCoins < 12)
         {
             playerCoins -= stolen;
             opponentCoins += stolen;
@@ -235,7 +235,7 @@ public class RoleAbilityManager : MonoBehaviour
             return;
         }
 
-        // Player needs to select a card manually
+        // Player picks which card to swap — defer turn end until selection is made
         if (!GameManager.Instance.isPlayerTurn)
         {
             Debug.Log("❌ Not your turn!");
@@ -244,12 +244,18 @@ public class RoleAbilityManager : MonoBehaviour
 
         if (HandManager.Instance.playerHandCards.Count == 0) return;
 
-        int playerRandomIndex = Random.Range(0, HandManager.Instance.playerHandCards.Count);
-        GameObject targetCard = HandManager.Instance.playerHandCards[playerRandomIndex];
-        HandManager.Instance.RemoveCardFromHand(targetCard, true);
+        GameManager.Instance.SetAwaitingPlayerAction(true);
+        HandManager.Instance.EnterSwapMode();
+    }
+
+    public void CompletePlayerSwap(GameObject selectedCard)
+    {
+        HandManager.Instance.RemoveCardFromHand(selectedCard, true);
         DeckManager.Instance.DrawToHand(true);
         audSource.PlayOneShot(swapSound);
         GameEventLog.AppendGlobal("Player swaps a card.");
+        GameManager.Instance?.SetAwaitingPlayerAction(false);
+        GameManager.Instance?.EndTurn();
     }
 
     void Assassinate(int cost, bool isPlayer)

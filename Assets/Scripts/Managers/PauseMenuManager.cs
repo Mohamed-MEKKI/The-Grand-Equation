@@ -13,71 +13,81 @@ public class PauseManager : MonoBehaviour
     [SerializeField] private GameObject RulesPanel;
     [SerializeField] private GameObject SettingsPanel;
 
-
     public bool isPaused = false;
-
-    void Update()
-    {
-        if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            pausePanel.SetActive(false);
-        }
-    }
 
     void Awake()
     {
         Instance = this;
-        // Defensive: ensure we never start a scene paused with an active overlay blocking clicks.
         isPaused = false;
-        if (pausePanel != null)
-            pausePanel.SetActive(false);
+        SetPanelActive(pausePanel, false);
+        SetPanelActive(RulesPanel, false);
+        SetPanelActive(SettingsPanel, false);
         Time.timeScale = 1f;
         AudioListener.pause = false;
     }
 
-    // --- BUTTON CALLBACKS (called from Pause Button OnClick) ---
+    void Update()
+    {
+        bool escapePressed = false;
+
+        if (Keyboard.current != null)
+            escapePressed = Keyboard.current.escapeKey.wasPressedThisFrame;
+        else
+            escapePressed = Input.GetKeyDown(KeyCode.Escape);
+
+        if (!escapePressed) return;
+
+        // Sub-panels take priority — close them first before resuming
+        if (SettingsPanel != null && SettingsPanel.activeSelf)
+        {
+            CloseSettingsPanel();
+            return;
+        }
+
+        if (RulesPanel != null && RulesPanel.activeSelf)
+        {
+            CloseRulesPanel();
+            return;
+        }
+
+        if (isPaused) ResumeGame();
+        else PauseGame();
+    }
+
+    // --- BUTTON CALLBACKS ---
     public void OnPauseButtonClicked()
     {
         if (isPaused) ResumeGame();
         else PauseGame();
     }
-    public void OpenSettingsButton()
-    {
-        SetPanelActive(SettingsPanel, true);
-    }
+
+    public void OnResumeButtonClicked() => ResumeGame();
+    public void OpenSettingsButton() => SetPanelActive(SettingsPanel, true);
+    public void OnClickShowRulesPanel() => SetPanelActive(RulesPanel, true);
+    public void CloseSettingsPanel() => SetPanelActive(SettingsPanel, false);
+    public void CloseRulesPanel() => SetPanelActive(RulesPanel, false);
 
     public void PauseGame()
     {
         isPaused = true;
-        pausePanel.SetActive(true);
+        SetPanelActive(pausePanel, true);
         Time.timeScale = 0f;
         AudioListener.pause = true;
-    }
-
-    public void OnClickShowRulesPanel()
-    {
-        SetPanelActive(RulesPanel, true);
     }
 
     public void ResumeGame()
     {
         isPaused = false;
-        pausePanel.SetActive(false);
+        SetPanelActive(pausePanel, false);
+        SetPanelActive(RulesPanel, false);
+        SetPanelActive(SettingsPanel, false);
         Time.timeScale = 1f;
         AudioListener.pause = false;
+
+        if (pauseButton != null)
+            UnityEngine.EventSystems.EventSystem.current?.SetSelectedGameObject(pauseButton.gameObject);
     }
 
-    public void CloseSettingsPanel()
-    {
-        SetPanelActive(SettingsPanel, false);
-    }
-
-    public void CloseRulesPanel()
-    {
-        SetPanelActive(RulesPanel, false);
-    }
-
-    // --- OTHER BUTTONS ---
     public void GoToMainMenu()
     {
         Time.timeScale = 1f;

@@ -1,7 +1,6 @@
 using UnityEngine;
 using UnityEngine.UI;
 using UnityEngine.SceneManagement;
-using UnityEngine.Audio;
 
 public class MenuManager : MonoBehaviour
 {
@@ -25,7 +24,7 @@ public class MenuManager : MonoBehaviour
 
     public void OnClickSaveSettings()
     {
-
+        SettingsManager.Instance?.SaveSettings();
         HideSettingsMenu();
     }
 

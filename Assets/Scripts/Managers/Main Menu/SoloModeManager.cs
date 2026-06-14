@@ -24,7 +24,7 @@ public class SoloModeManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance != null && Instance != this)
+        if (Instance != null && Instance != this && gameObject!=null)
         {
             Destroy(gameObject);
             return;
@@ -110,7 +110,7 @@ public class SoloModeManager : MonoBehaviour
         PlayerPrefs.Save();
 
         // Load Game scene + setup solo
-        SceneManager.LoadScene("Game");
+        SceneManager.LoadScene("GameScene");
     }
 
     // Called by GameManager on scene load

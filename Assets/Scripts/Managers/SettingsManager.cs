@@ -1,20 +1,20 @@
 using UnityEngine;
-using UnityEngine.UI;
+using UnityEngine.Audio;
 
 public class SettingsManager : MonoBehaviour
 {
     public static SettingsManager Instance { get; private set; }
 
-    [Header("Audio")]
-    public Slider sfxSlider;
-    public Slider musicSlider;
+    [Header("Audio Mixer")]
+    [SerializeField] private AudioMixer audioMixer;
 
-    [Header("Toggles")]
-    public Toggle notificationsToggle;
-    public Toggle fullscreenToggle;
+    private const string MixerSFXParam   = "SFXVolume";
+    private const string MixerMusicParam = "MusicVolume";
 
-    [Header("Button")]
-    public Button saveButton;
+    public float SFXVolume     { get; private set; } = 0.7f;
+    public float MusicVolume   { get; private set; } = 0.5f;
+    public bool  Notifications { get; private set; } = true;
+    public bool  Fullscreen    { get; private set; } = false;
 
     private void Awake()
     {
@@ -22,43 +22,83 @@ public class SettingsManager : MonoBehaviour
         {
             Instance = this;
             DontDestroyOnLoad(gameObject);
+            LoadSettings();
+            ApplySettings();
         }
-        else Destroy(gameObject);
+        else
+        {
+            Destroy(gameObject);
+        }
     }
 
-    private void Start()
+    // --- Setters called by SettingsPanel UI ---
+
+    public void SetSFX(float value)
     {
-        // Load saved settings
-        sfxSlider.value = PlayerPrefs.GetFloat("SFX", 0.7f);
-        musicSlider.value = PlayerPrefs.GetFloat("Music", 0.5f);
-        notificationsToggle.isOn = PlayerPrefs.GetInt("Notifications", 1) == 1;
-        fullscreenToggle.isOn = PlayerPrefs.GetInt("Fullscreen", 0) == 1;
-
-        // Apply immediately
-        ApplySettings();
-
-        // Listeners
-        sfxSlider.onValueChanged.AddListener(_ => ApplySettings());
-        musicSlider.onValueChanged.AddListener(_ => ApplySettings());
-        fullscreenToggle.onValueChanged.AddListener(_ => ApplySettings());
-        saveButton.onClick.AddListener(SaveSettings);
+        SFXVolume = value;
+        ApplyAudio();
     }
 
-    void ApplySettings()
+    public void SetMusic(float value)
     {
-        AudioListener.volume = sfxSlider.value;
-        Screen.fullScreen = fullscreenToggle.isOn;
-        // Hook musicSlider into your AudioSource if you have one
+        MusicVolume = value;
+        ApplyAudio();
+    }
+
+    public void SetFullscreen(bool value)
+    {
+        Fullscreen = value;
+        Screen.fullScreen = value;
+    }
+
+    public void SetNotifications(bool value)
+    {
+        Notifications = value;
     }
 
     public void SaveSettings()
     {
-        PlayerPrefs.SetFloat("SFX", sfxSlider.value);
-        PlayerPrefs.SetFloat("Music", musicSlider.value);
-        PlayerPrefs.SetInt("Notifications", notificationsToggle.isOn ? 1 : 0);
-        PlayerPrefs.SetInt("Fullscreen", fullscreenToggle.isOn ? 1 : 0);
+        PlayerPrefs.SetFloat("SFX",         SFXVolume);
+        PlayerPrefs.SetFloat("Music",       MusicVolume);
+        PlayerPrefs.SetInt("Notifications", Notifications ? 1 : 0);
+        PlayerPrefs.SetInt("Fullscreen",    Fullscreen ? 1 : 0);
         PlayerPrefs.Save();
+        Debug.Log("Settings saved.");
+    }
 
-        Debug.Log("Settings saved!");
+    // --- Internal ---
+
+    private void LoadSettings()
+    {
+        SFXVolume     = PlayerPrefs.GetFloat("SFX",         0.7f);
+        MusicVolume   = PlayerPrefs.GetFloat("Music",       0.5f);
+        Notifications = PlayerPrefs.GetInt("Notifications", 1) == 1;
+        Fullscreen    = PlayerPrefs.GetInt("Fullscreen",    0) == 1;
+    }
+
+    private void ApplySettings()
+    {
+        ApplyAudio();
+        Screen.fullScreen = Fullscreen;
+    }
+
+    private void ApplyAudio()
+    {
+        if (audioMixer != null)
+        {
+            if (!audioMixer.SetFloat(MixerSFXParam, SliderToDB(SFXVolume)))
+                Debug.LogWarning($"AudioMixer: exposed parameter '{MixerSFXParam}' not found. Expose it in the AudioMixer asset.");
+            if (!audioMixer.SetFloat(MixerMusicParam, SliderToDB(MusicVolume)))
+                Debug.LogWarning($"AudioMixer: exposed parameter '{MixerMusicParam}' not found. Expose it in the AudioMixer asset.");
+        }
+        else
+        {
+            AudioListener.volume = SFXVolume;
+        }
+    }
+
+    private static float SliderToDB(float value)
+    {
+        return Mathf.Log10(Mathf.Max(value, 0.0001f)) * 20f;
     }
 }
