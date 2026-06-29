@@ -1,34 +1,8 @@
 using UnityEngine;
-using UnityEngine.UI;
-using UnityEngine.SceneManagement;
 
 public class LevelsManager : MonoBehaviour
 {
     public enum Difficulty { Beginner = 1, Intermediate = 2, Hard = 3 }
-
-    [Header("Scene Names")]
-    [SerializeField] private string gameSceneName = "GameScene";
-    [SerializeField] private string mainMenuSceneName = "MainMenu";
-
-
-    private void Start()
-    {
-
-    }
-
-    // ── Button wiring ──────────────────────────────────────────────
-
-    private void AddDifficultyListener(Button button, Difficulty difficulty)
-    {
-        if (button == null)
-        {
-            Debug.LogWarning($"LevelsManager: {difficulty} button is not assigned.");
-            return;
-        }
-
-        button.onClick.RemoveAllListeners();
-        button.onClick.AddListener(() => OnDifficultySelected(difficulty));
-    }
 
     // ── onClick handlers ───────────────────────────────────────────
 
@@ -41,7 +15,7 @@ public class LevelsManager : MonoBehaviour
     public void OnBeginnerClicked() => OnDifficultySelected(Difficulty.Beginner);
     public void OnIntermediateClicked() => OnDifficultySelected(Difficulty.Intermediate);
     public void OnHardClicked() => OnDifficultySelected(Difficulty.Hard);
-    public void OnMainMenuClicked() => SceneManager.LoadScene(mainMenuSceneName);
+    public void OnMainMenuClicked() => SceneLoader.GoToMainMenu();
 
     // ── Core logic ─────────────────────────────────────────────────
 
@@ -54,14 +28,11 @@ public class LevelsManager : MonoBehaviour
 
     private void LoadGameScene()
     {
-        if (string.IsNullOrEmpty(gameSceneName))
-        {
-            Debug.LogError("LevelsManager: gameSceneName is empty.");
-            return;
-        }
-
+        // Explicitly mark single-player so GameManager reads the correct mode.
+        // Note: this clears any multiplayer flag set by a lobby screen.
         PlayerPrefs.SetInt("IsMultiplayer", 0);
         PlayerPrefs.Save();
-        SceneManager.LoadScene(gameSceneName);
+        SceneLoader.GoToGame();
     }
+
 }

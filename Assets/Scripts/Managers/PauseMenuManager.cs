@@ -44,11 +44,11 @@ public class PauseManager : MonoBehaviour
             return;
         }
 
-        if (RulesPanel != null && RulesPanel.activeSelf)
+        /*if (RulesPanel != null && RulesPanel.activeSelf)
         {
             CloseRulesPanel();
             return;
-        }
+        }*/
 
         if (isPaused) ResumeGame();
         else PauseGame();
@@ -65,7 +65,7 @@ public class PauseManager : MonoBehaviour
     public void OpenSettingsButton() => SetPanelActive(SettingsPanel, true);
     public void OnClickShowRulesPanel() => SetPanelActive(RulesPanel, true);
     public void CloseSettingsPanel() => SetPanelActive(SettingsPanel, false);
-    public void CloseRulesPanel() => SetPanelActive(RulesPanel, false);
+    //public void CloseRulesPanel() => SetPanelActive(RulesPanel, false);
 
     public void PauseGame()
     {
@@ -77,6 +77,7 @@ public class PauseManager : MonoBehaviour
 
     public void ResumeGame()
     {
+        Debug.Log("Resuming game");
         isPaused = false;
         SetPanelActive(pausePanel, false);
         SetPanelActive(RulesPanel, false);

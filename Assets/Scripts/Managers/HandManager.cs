@@ -1,3 +1,4 @@
+using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
 
@@ -6,34 +7,47 @@ public class HandManager : MonoBehaviour
     public static HandManager Instance { get; private set; }
 
     [Header("Player Hand")]
-    public RectTransform playerHandTransform ;     // Your "HandPanel"
+    public RectTransform playerHandTransform;
 
     [Header("Opponent Hand")]
-    public RectTransform opponentHandTransform;   // NEW: Drag opponent panel here
+    public RectTransform opponentHandTransform;
 
     [Header("Settings")]
     public float cardSpacing = 120f;
-    public float opponentYOffset = -200f;     // Top of screen offset
 
     [Header("Multiplayer (pass the device)")]
-    [Tooltip("If > 0 and GameManager.IsMultiplayer, overrides cardSpacing when laying out hands.")]
     [SerializeField] private float multiplayerCardSpacingOverride = 0f;
+
+    [Header("Ability Feedback")]
+    [SerializeField] private float abilityFlipDuration = 1.5f;
 
     public List<GameObject> playerHandCards = new List<GameObject>();
     public List<GameObject> opponentHandCards = new List<GameObject>();
 
     public enum SelectionType { None, EliminateOpponentHand, SwapPlayerCard }
-
     public SelectionType currentSelection = SelectionType.None;
+
+    // Cached reusable lists — avoids per-call allocation
+    private readonly List<GameObject> _swapTemp = new List<GameObject>();
+    private readonly List<GameObject> _scratchList = new List<GameObject>();
+    private readonly List<GameObject> _revealSnap = new List<GameObject>();
+    private readonly List<GameObject> _flashSnap = new List<GameObject>();
+    private readonly List<GameObject> _clearPlayer = new List<GameObject>();
+    private readonly List<GameObject> _clearOpponent = new List<GameObject>();
+
+    // Cached coroutine references — prevents orphaned coroutines
+    private Coroutine _revealCoroutine;
+    private Coroutine _flashCoroutine;
 
     private void Awake()
     {
-        if (Instance == null) Instance = this;
-        else Destroy(gameObject);
+        if (Instance != null && Instance != this) { Destroy(gameObject); return; }
+        Instance = this;
     }
 
     public void AddCardToHand(GameObject cardObj, bool isPlayer)
     {
+        if (cardObj == null) { Debug.LogError("AddCardToHand: cardObj is null!"); return; }
         if (isPlayer)
         {
             playerHandCards.Add(cardObj);
@@ -47,15 +61,6 @@ public class HandManager : MonoBehaviour
         ArrangeHand(isPlayer);
     }
 
-    public Vector3 GetHandPosition(bool isPlayer)
-    {
-        List<GameObject> hand = isPlayer ? playerHandCards : opponentHandCards;
-        float spacing = GetActiveCardSpacing();
-        float totalWidth = (hand.Count - 1) * spacing;
-        float startX = -totalWidth / 2;
-        return new Vector3(startX + hand.Count * spacing * 0.6f, 0, 0);  // Spread
-    }
-
     private float GetActiveCardSpacing()
     {
         if (multiplayerCardSpacingOverride > 0f &&
@@ -65,60 +70,50 @@ public class HandManager : MonoBehaviour
         return cardSpacing;
     }
 
+    /// <summary>Returns a reusable scratch list of non-null cards. Do not store reference between frames.</summary>
+    public List<GameObject> GetValidCards(bool isPlayer)
+    {
+        _scratchList.Clear();
+        var hand = isPlayer ? playerHandCards : opponentHandCards;
+        foreach (var c in hand)
+            if (c != null) _scratchList.Add(c);
+        return _scratchList;
+    }
+
     public void SwapHandPositions()
     {
-        // If either transform or lists are missing, bail out
         if (playerHandTransform == null || opponentHandTransform == null)
         {
             Debug.LogWarning("SwapHandPositions: hand transforms not assigned.");
             return;
         }
 
-        // Move all player cards to opponent transform, and opponent cards to player transform
         foreach (var card in playerHandCards)
-        {
-            if (card != null)
-                card.transform.SetParent(opponentHandTransform, false);
-        }
+            if (card != null) card.transform.SetParent(opponentHandTransform, false);
 
         foreach (var card in opponentHandCards)
-        {
-            if (card != null)
-                card.transform.SetParent(playerHandTransform, false);
-        }
+            if (card != null) card.transform.SetParent(playerHandTransform, false);
 
-        // Swap the internal lists so logical ownership matches the visual parent
-        var tempList = new List<GameObject>(playerHandCards);
+        // Swap lists without allocating a new List
+        _swapTemp.Clear();
+        _swapTemp.AddRange(playerHandCards);
         playerHandCards.Clear();
         playerHandCards.AddRange(opponentHandCards);
         opponentHandCards.Clear();
-        opponentHandCards.AddRange(tempList);
+        opponentHandCards.AddRange(_swapTemp);
+        _swapTemp.Clear();
 
-        // Update face-up state: player's hand should be face up, opponent's face down
-        foreach (var card in playerHandCards)
-        {
-            if (card == null) continue;
-            card.GetComponent<CardDisplay>()?.SetFaceUp(true);
-        }
-
-        foreach (var card in opponentHandCards)
-        {
-            if (card == null) continue;
-            card.GetComponent<CardDisplay>()?.SetFaceUp(false);
-        }
-
-        // Re-arrange both hands to their new parents
         ArrangeHand(true);
         ArrangeHand(false);
     }
 
     public void RemoveCardFromHand(GameObject cardObj, bool isPlayer = true)
     {
+        if (cardObj == null) return;
         if (isPlayer) playerHandCards.Remove(cardObj);
         else opponentHandCards.Remove(cardObj);
-
         ArrangeHand(isPlayer);
-        if (cardObj != null) Destroy(cardObj);
+        Destroy(cardObj);
     }
 
     public void EnterSwapMode()
@@ -126,13 +121,12 @@ public class HandManager : MonoBehaviour
         currentSelection = SelectionType.SwapPlayerCard;
         foreach (var card in playerHandCards)
         {
+            if (card == null) continue;
             var selector = card.GetComponent<CardSelector>();
-            if (selector == null)
-                selector = card.AddComponent<CardSelector>();
+            if (selector == null) selector = card.AddComponent<CardSelector>();
             selector.selectionType = SelectionType.SwapPlayerCard;
         }
         GameEventLog.AppendGlobal("Select a card in your hand to swap.");
-        Debug.Log("Swap Mode: Click a card to replace it.");
     }
 
     public void ExitSwapMode()
@@ -140,38 +134,32 @@ public class HandManager : MonoBehaviour
         currentSelection = SelectionType.None;
         foreach (var card in playerHandCards)
         {
+            if (card == null) continue;
             var selector = card.GetComponent<CardSelector>();
-            if (selector != null)
-                Destroy(selector);
+            if (selector != null) Destroy(selector);
         }
     }
 
     public void EnterEliminationMode()
     {
         currentSelection = SelectionType.EliminateOpponentHand;
-
-        // Add click handler to all opponent cards for selection
         foreach (var card in opponentHandCards)
         {
+            if (card == null) continue;
             var selector = card.GetComponent<CardSelector>();
-            if (selector == null)
-                selector = card.AddComponent<CardSelector>();
+            if (selector == null) selector = card.AddComponent<CardSelector>();
             selector.selectionType = SelectionType.EliminateOpponentHand;
         }
-
-        Debug.Log("Elimination Mode: Click opponent's card!");
-    }    
+    }
 
     public void ExitEliminationMode()
     {
         currentSelection = SelectionType.None;
-
-        // Remove selectors from opponent cards
         foreach (var card in opponentHandCards)
         {
+            if (card == null) continue;
             var selector = card.GetComponent<CardSelector>();
-            if (selector != null)
-                Destroy(selector);
+            if (selector != null) Destroy(selector);
         }
     }
 
@@ -188,24 +176,109 @@ public class HandManager : MonoBehaviour
 
         for (int i = 0; i < handCards.Count; i++)
         {
-            RectTransform rt = handCards[i].GetComponent<RectTransform>();
+            if (handCards[i] == null) continue;
+            var rt = handCards[i].GetComponent<RectTransform>();
+            if (rt == null) continue;
             rt.anchoredPosition = new Vector2(startX + i * spacing, 0f);
             rt.localScale = Vector3.one;
         }
     }
+
     public void ClearHands()
     {
-        foreach (var card in playerHandCards) if (card) Destroy(card);
-        foreach (var card in opponentHandCards) if (card) Destroy(card);
+        // Snapshot into cached lists before clearing to avoid stale refs
+        _clearPlayer.Clear();
+        _clearOpponent.Clear();
+        _clearPlayer.AddRange(playerHandCards);
+        _clearOpponent.AddRange(opponentHandCards);
         playerHandCards.Clear();
         opponentHandCards.Clear();
+        foreach (var card in _clearPlayer) if (card) Destroy(card);
+        foreach (var card in _clearOpponent) if (card) Destroy(card);
+        _clearPlayer.Clear();
+        _clearOpponent.Clear();
     }
+
+    public void FlipAllCardsDown()
+    {
+        foreach (var card in playerHandCards)
+            card?.GetComponent<CardDisplay>()?.SetFaceUp(false);
+        foreach (var card in opponentHandCards)
+            card?.GetComponent<CardDisplay>()?.SetFaceUp(false);
+    }
+
+    public void RevealPlayerHandAnimated()
+    {
+        if (_revealCoroutine != null) StopCoroutine(_revealCoroutine);
+        _revealCoroutine = StartCoroutine(RevealPlayerHandCoroutine());
+    }
+
+    private IEnumerator RevealPlayerHandCoroutine()
+    {
+        // Snapshot into cached list — avoids allocation
+        _revealSnap.Clear();
+        _revealSnap.AddRange(playerHandCards);
+
+        foreach (var card in _revealSnap)
+        {
+            if (card == null) continue;
+            var display = card.GetComponent<CardDisplay>();
+            if (display == null) continue;
+            var flip = card.GetComponent<CardFlip>();
+            if (flip != null) flip.StartFlip(true, display);
+            else display.SetFaceUp(true);
+            yield return new WaitForSeconds(0.1f);
+        }
+        _revealSnap.Clear();
+    }
+
+    public void RevealOneCardOnly(bool isPlayer)
+    {
+        var hand = isPlayer ? playerHandCards : opponentHandCards;
+        if (hand.Count == 0) return;
+
+        int revealIndex = Random.Range(0, hand.Count);
+        for (int i = 0; i < hand.Count; i++)
+        {
+            if (hand[i] == null) continue;
+            hand[i].GetComponent<CardDisplay>()?.SetFaceUp(i == revealIndex);
+        }
+    }
+
     public GameObject GetRandomCard(bool isPlayer)
     {
         var hand = isPlayer ? playerHandCards : opponentHandCards;
         if (hand.Count == 0) return null;
         return hand[UnityEngine.Random.Range(0, hand.Count)];
     }
+
+    public void FlashCardsDown(bool isPlayer)
+    {
+        if (GameManager.Instance == null || !GameManager.Instance.IsMultiplayer) return;
+        if (_flashCoroutine != null) StopCoroutine(_flashCoroutine);
+        _flashCoroutine = StartCoroutine(FlashCardsDownCoroutine(isPlayer, abilityFlipDuration));
+    }
+
+    private IEnumerator FlashCardsDownCoroutine(bool isPlayer, float duration)
+    {
+        // Snapshot into cached list — avoids allocation
+        _flashSnap.Clear();
+        _flashSnap.AddRange(isPlayer ? playerHandCards : opponentHandCards);
+
+        foreach (var card in _flashSnap)
+            card?.GetComponent<CardDisplay>()?.SetFaceUp(false);
+
+        yield return new WaitForSecondsRealtime(duration);
+
+        if (isPlayer)
+        {
+            foreach (var card in _flashSnap)
+                if (card != null && playerHandCards.Contains(card))
+                    card.GetComponent<CardDisplay>()?.SetFaceUp(true);
+        }
+        _flashSnap.Clear();
+    }
+
     public void OpponentPlayRandomCard()
     {
         if (opponentHandCards.Count == 0)
@@ -215,59 +288,31 @@ public class HandManager : MonoBehaviour
         }
 
         int randomIndex = Random.Range(0, opponentHandCards.Count);
-        GameObject playedCard = opponentHandCards[randomIndex];
-        
-        if (playedCard == null)
+        GameObject played = opponentHandCards[randomIndex];
+
+        if (played == null)
         {
             Debug.LogError("Selected opponent card is null!");
             opponentHandCards.RemoveAt(randomIndex);
             return;
         }
 
-        var display = playedCard.GetComponent<CardDisplay>();
+        var display = played.GetComponent<CardDisplay>();
+        if (display == null) { Debug.LogError("Opponent card missing CardDisplay!"); RemoveCardFromHand(played, false); return; }
+        if (display.card == null) { Debug.LogError("Opponent card missing card data!"); RemoveCardFromHand(played, false); return; }
 
-        if (display == null)
-        {
-            Debug.LogError("Opponent card missing CardDisplay component!");
-            RemoveCardFromHand(playedCard, false);
-            return;
-        }
-
-        if (display.card == null)
-        {
-            Debug.LogError("Opponent card missing card data!");
-            RemoveCardFromHand(playedCard, false);
-            return;
-        }
-
-        // Store card info before removing (card gets destroyed in RemoveCardFromHand)
-        string cardName = display.card.cardName;
-
-        // Keep opponent card hidden when played.
         display.SetFaceUp(false);
+        GameEventLog.AppendGlobal("Opponent plays: " + display.card.cardName + ".");
 
-        GameEventLog.AppendGlobal($"Opponent plays: {cardName}.");
-
-        // Give the player a chance to challenge this claimed role before resolving.
         if (GameManager.Instance != null)
-        {
-            GameManager.Instance.BeginOpponentClaim(display.card, playedCard);
-        }
+            GameManager.Instance.BeginOpponentClaim(display.card, played);
         else
         {
-            // Fallback: old immediate resolution
             var abilities = display.card.abilities;
             if (abilities != null && RoleAbilityManager.Instance != null)
-            {
                 foreach (var ability in abilities)
-                {
                     if (ability != null)
                         RoleAbilityManager.Instance.ExecuteAbility(ability, false);
-                }
-            }
-            //RemoveCardFromHand(playedCard, false);
         }
-
-        Debug.Log($"Opponent played: {cardName}");
     }
 }

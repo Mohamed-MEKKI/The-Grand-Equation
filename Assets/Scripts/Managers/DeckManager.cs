@@ -4,7 +4,7 @@ using UnityEngine;
 
 public class DeckManager : MonoBehaviour
 {
-    public static DeckManager Instance;
+    public static DeckManager Instance { get; private set; }
 
     public GameObject CardToHand;           // Your card prefab
     public List<CardDefiner> cardsInDeck = new List<CardDefiner>();
@@ -17,19 +17,19 @@ public class DeckManager : MonoBehaviour
 
     private void Awake()
     {
-        if (Instance == null)
+        if (Instance != null && Instance != this)
         {
-            Instance = this;
-            DontDestroyOnLoad(gameObject);
-        }
-        else
-        {
-            // New game starting — reset the persistent deck so it's fresh
-            Instance.BuildAndShuffleDeck();
             Destroy(gameObject);
             return;
         }
+        Instance = this;
+        DontDestroyOnLoad(gameObject);
+        BuildAndShuffleDeck();
+    }
 
+    /// <summary>Call this to reset the deck for a new game (e.g. from a game reset flow).</summary>
+    public void ResetDeck()
+    {
         BuildAndShuffleDeck();
     }
 
@@ -76,24 +76,23 @@ public class DeckManager : MonoBehaviour
 
         GameObject cardObj = Instantiate(CardToHand, parent);
         CardDisplay display = cardObj.GetComponent<CardDisplay>();
-        
+
         if (display == null)
         {
             Debug.LogError("CardToHand prefab missing CardDisplay component!");
             Destroy(cardObj);
             return;
         }
-        
+
         // Setup the card data first
         display.Setup(cardDef);
-        
+
         // IMPORTANT: Set face state AFTER setup
         // Player cards: face UP (true), Opponent cards: face DOWN (false)
         display.SetFaceUp(isPlayer);
 
         HandManager.Instance.AddCardToHand(cardObj, isPlayer);
 
-        Debug.Log($"Drew card to {(isPlayer ? "PLAYER" : "OPPONENT")} hand. Deck left: {cardsInDeck.Count}");
     }
 
     // Deal starting hands to both players
@@ -121,5 +120,10 @@ public class DeckManager : MonoBehaviour
             DrawToHand(false);
             yield return new WaitForSeconds(0.4f);
         }
+
+        // Register click sounds on newly dealt card buttons.
+        // Cards are spawned dynamically so AutoButtonSounds misses them at Start.
+        var soundManager = FindFirstObjectByType<AutoButtonSounds>();
+        soundManager?.RefreshButtonRegistration();
     }
 }

@@ -8,34 +8,20 @@ public class ClaimMenu : MonoBehaviour
 
     [Header("UI")]
     public GameObject claimMenuPanel;
-    public Button claimMenuButton;  // Drag your claim menu button here
+    public Button claimMenuButton;
 
     public bool isclicked = false;
-
-    private bool claimButtonShownForTurn;
+    private bool claimButtonLocked = false;
 
     void Update()
     {
-        if (GameManager.Instance != null)
-        {
-            bool wantShown = GameManager.Instance.isPlayerTurn;
-            if (wantShown != claimButtonShownForTurn)
-            {
-                claimButtonShownForTurn = wantShown;
-                SetClaimButtonVisible(wantShown);
-            }
-        }
-
         if (Keyboard.current.escapeKey.wasPressedThisFrame)
-        {
-            Debug.Log("key pressed");
             HideClaimMenu();
-        }
     }
+
     private void Awake()
     {
         Instance = this;
-        // Ensure the panel doesn't start active and block clicks.
         HideClaimMenu();
     }
 
@@ -59,8 +45,29 @@ public class ClaimMenu : MonoBehaviour
             claimMenuPanel.SetActive(false);
     }
 
+    public void DisableClaimButton()
+    {
+        claimButtonLocked = true;
+        SetClaimButtonVisible(false);
+    }
 
-    // CONNECT THESE TO YOUR BUTTONS IN INSPECTOR!
+    public void UnlockClaimButton()
+    {
+        claimButtonLocked = false;
+    }
+
+    public void SetClaimButtonVisible(bool isVisible)
+    {
+        if (isVisible && claimButtonLocked) return;
+
+        if (claimMenuButton != null)
+            claimMenuButton.gameObject.SetActive(isVisible);
+
+        if (!isVisible)
+            HideClaimMenu();
+    }
+
+    // CONNECT THESE TO YOUR BUTTONS IN INSPECTOR
     public void ClaimDuke() => Claim("National Guard");
     public void ClaimThief() => Claim("Thief");
     public void ClaimAssassin() => Claim("Assassin");
@@ -69,29 +76,9 @@ public class ClaimMenu : MonoBehaviour
     public void ClaimDeputy() => Claim("Deputy");
     public void ClaimBoss() => Claim("Boss");
 
-
-    public void DisableClaimButton()
-    {
-        claimButtonShownForTurn = false;
-        SetClaimButtonVisible(false);
-    }
-
-    public void SetClaimButtonVisible(bool isVisible)
-    {
-        if (claimMenuButton != null)
-            claimMenuButton.gameObject.SetActive(isVisible);
-
-        // If we hide the claim button, ensure its panel is also closed.
-        if (!isVisible)
-            HideClaimMenu();
-    }
     private void Claim(string roleName)
     {
-        // Tell the GameManager to process the claim
         GameManager.Instance.ClaimRoleByName(roleName);
-
-        // Always hide the menu after claiming and update state consistently.
-        // Removed duplicate calls and special-case that re-called ClaimRoleByName.
         HideClaimMenu();
     }
 }

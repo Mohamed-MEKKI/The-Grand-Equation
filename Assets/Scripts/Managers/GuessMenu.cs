@@ -4,7 +4,7 @@ using UnityEngine.UI;
 
 public class GuessMenu : MonoBehaviour
 {
-    private static GuessMenu Instance;
+    public static GuessMenu Instance;
 
     [Header("UI")]
     public GameObject guessPanel;
